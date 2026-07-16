@@ -54,11 +54,11 @@ if "df_staff" not in st.session_state:
     st.session_state["df_staff"] = None
 
 # -----------------------
-# ログイン画面
+# 関数
 # -----------------------
 def show_login():
     """ログイン画面を表示する"""
-    
+
     st.title("🔐 ログイン")
 
     username = st.text_input("ユーザー名")
@@ -75,8 +75,26 @@ def show_login():
         else:
             st.error("ユーザー名またはパスワードが違います")
 
+def show_csv_upload(user):
+    """CSVアップロード画面を表示する"""
+
+    if user.role in ["store_manager", "hq_manager", "admin"]:
+
+        st.header("1. 来局データのアップロード")
+
+        uploaded_file = st.file_uploader(
+            "CSVファイルを選択（列名: date, visits）",
+            type="csv"
+        )
+
+    else:
+        uploaded_file = None
+
+    return uploaded_file
+
+
 # -----------------------
-# ログイン画面
+# ログイン画面(関数)
 # -----------------------
 if st.session_state["user"] is None:
     show_login()
@@ -118,19 +136,9 @@ else:
         format_func=lambda x: x.store_name
     )
     # -----------------------
-    # ファイルアップロード
+    # ファイルアップロード(関数)
     # -----------------------
-    if user.role in ["store_manager", "hq_manager", "admin"]:
-
-        st.header("1. 来局データのアップロード")
-
-        uploaded_file = st.file_uploader(
-            "CSVファイルを選択（列名: date, visits）",
-            type="csv"
-    )
-
-    else:
-        uploaded_file = None
+    uploaded_file = show_csv_upload(user)
 
     # -----------------------
     # 予測条件
