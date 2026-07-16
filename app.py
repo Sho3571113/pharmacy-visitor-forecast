@@ -126,6 +126,81 @@ def run_forecast(selected_store, forecast_days):
 
         if df_forecast is None:
             st.warning("予測できるデータがありません")
+def show_forecast_result():
+    """予測結果を表示する"""
+
+    if st.session_state["df_forecast"] is None:
+        return
+
+    df_forecast = st.session_state["df_forecast"]
+
+    fig = px.line(
+        df_forecast,
+        x="date",
+        y="predicted_visits",
+        title="DBデータによる予測"
+    )
+
+    st.plotly_chart(
+        fig,
+        use_container_width=True,
+        key="db_forecast_chart"
+    )
+
+    st.subheader("予測表")
+
+    st.dataframe(
+        df_forecast.head(10),
+        use_container_width=True
+    )
+
+def show_staffing(selected_store):
+    """スタッフ配置画面を表示する"""
+
+    st.header("4. 推奨薬剤師人数")
+
+    if st.session_state["df_staff"] is None:
+        df_staff = st.session_state["df_forecast"].copy()
+
+        df_staff["推奨薬剤師数"] = (
+            df_staff["predicted_visits"]
+            .apply(get_staff_suggestion)
+        )
+
+        df_staff["実配置人数"] = df_staff["推奨薬剤師数"]
+
+        saved_staff = get_staffing(selected_store.id)
+
+        if not saved_staff.empty:
+            for _, row in saved_staff.iterrows():
+                df_staff.loc[
+                    df_staff["date"] == row["date"],
+                    "実配置人数"
+                ] = row["staff_count"]
+
+        st.session_state["df_staff"] = df_staff
+
+    edited_df = st.data_editor(
+        st.session_state["df_staff"][
+            ["date", "predicted_visits", "推奨薬剤師数", "実配置人数"]
+        ],
+        use_container_width=True,
+        hide_index=True,
+        key="staff_editor"
+    )
+
+    st.session_state["df_staff"]["実配置人数"] = edited_df["実配置人数"]
+
+    if st.button("実配置人数を保存"):
+
+        for _, row in st.session_state["df_staff"].iterrows():
+            save_staffing(
+                selected_store.id,
+                row["date"],
+                row["実配置人数"]
+            )
+
+        st.success("実配置人数を保存しました")
 
 
 # -----------------------
@@ -233,88 +308,18 @@ else:
         # -----------------------
         # 製図以下
         # -----------------------
-
         if st.session_state["df_forecast"] is not None:
+            show_forecast_result()
 
-            df_forecast = st.session_state["df_forecast"]
+        # -----------------------
+        #　推奨人数、実配置人数
+        # -----------------------  
 
-            fig = px.line(
-                df_forecast,
-                x="date",
-                y="predicted_visits",
-                title="DBデータによる予測"
-            )
+            show_staffing(selected_store)
 
-            st.plotly_chart(
-                fig,
-                use_container_width=True,
-                key="db_forecast_chart"
-            )
-
-            st.subheader("予測表")
-
-            st.dataframe(
-                df_forecast.head(10),
-                use_container_width=True
-            )
-
-            st.header("4. 推奨薬剤師人数")
-
-            if st.session_state["df_staff"] is None:
-                df_staff = st.session_state["df_forecast"].copy()
-                df_staff["推奨薬剤師数"] = (
-                    df_staff["predicted_visits"]
-                    .apply(get_staff_suggestion)
-                )
-                df_staff["実配置人数"] = df_staff["推奨薬剤師数"]
-
-                saved_staff = get_staffing(selected_store.id)
-
-                if not saved_staff.empty:
-                    for _, row in saved_staff.iterrows():
-
-                       df_staff.loc[
-                       df_staff["date"] == row["date"],
-                       "実配置人数"
-                       ] = row["staff_count"] 
+          
 
 
-                st.session_state["df_staff"] = df_staff
-
-            edited_df = st.data_editor(
-                st.session_state["df_staff"][
-                    ["date", "predicted_visits", "推奨薬剤師数", "実配置人数"]
-                ],
-                use_container_width=True,
-                hide_index=True,
-
-                key="staff_editor"
-            )
-# ----------------------------
-# 一時保存、テスト用
-#-----------------------------
-            st.write("session_state")
-            st.write(st.session_state["df_staff"].dtypes)
-
-            st.write("edited_df")
-            st.write(edited_df.dtypes)
-
-
-
-
-
-
-            st.session_state["df_staff"]["実配置人数"] = edited_df["実配置人数"]
-            if st.button("実配置人数を保存"):
-
-                for _, row in st.session_state["df_staff"].iterrows():
-                    save_staffing(
-                        selected_store.id,
-                        row["date"],
-                        row["実配置人数"]
-        )
-
-                st.success("実配置人数を保存しました")
         # -----------------------
         # 特徴量重要度
         # -----------------------
