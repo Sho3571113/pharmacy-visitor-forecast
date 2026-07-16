@@ -1,6 +1,7 @@
 from sqlalchemy.orm import declarative_base
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Date
 from datetime import datetime
+from sqlalchemy import Column, Integer, ForeignKey, Date
 
 Base = declarative_base()
 
@@ -37,3 +38,18 @@ class VisitData(Base):
     date = Column(Date, nullable=False)
 
     visits = Column(Integer, nullable=False)
+
+class Staffing(Base):
+    __tablename__ = "staffing"
+
+    id = Column(Integer, primary_key=True)
+
+    store_id = Column(
+        Integer,
+        ForeignKey("stores.id"),
+        nullable=False
+    )
+
+    date = Column(Date, nullable=False)
+
+    staff_count = Column(Integer, nullable=False)

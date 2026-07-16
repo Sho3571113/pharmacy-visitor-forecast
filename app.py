@@ -7,17 +7,24 @@ import plotly.express as px
 import lightgbm as lgb
 import matplotlib.pyplot as plt
 import math
-from sqlalchemy.orm import sessionmaker
-from db_config import engine
-from models import VisitData
 
 from authentication import authenticate_user
-from lgbforecast import train_lightgbm_model, forecast_visits
-from db_service import get_stores, save_visit_data
-from db_service import get_stores
+from db_service import get_stores, save_visit_data, get_visit_data
+
+from forecast_service import forecast_from_db
+
+from staffing_service import (
+    save_staffing,
+    get_staffing
+)
 
 stores = get_stores()
 
+# -----------------------
+#共通関数
+# -----------------------
+def get_staff_suggestion(visits):
+    return math.ceil(visits / 25)
 
 
 # -----------------------
@@ -33,6 +40,18 @@ st.set_page_config(
 # -----------------------
 if "user" not in st.session_state:
     st.session_state["user"] = None
+
+if "df_forecast" not in st.session_state:
+    st.session_state["df_forecast"] = None
+
+if "model" not in st.session_state:
+    st.session_state["model"] = None
+
+if "db_data" not in st.session_state:
+    st.session_state["db_data"] = None
+
+if "df_staff" not in st.session_state:
+    st.session_state["df_staff"] = None
 
 # -----------------------
 # ログイン画面
@@ -137,27 +156,18 @@ else:
         st.subheader("CSVデータ確認")
         st.dataframe(df.head())
 
-        # DB保存（店舗責任者以上）
-        if user.role in ["store_manager", "hq_manager", "admin"]:
-
-            if st.button("DBへ保存"):
+        if st.button("DBへ保存"):
                 
+            try:
                 saved_count = save_visit_data(
                     df,
                     selected_store.id
                 )
                    
                 st.success(f"{saved_count}件保存しました")
-
-        required_columns = ["date", "visits"]
-
-        for col in required_columns:
-            if col not in df.columns:
-                st.error(f"{col} 列がありません")
-                st.stop()
-
-        df["date"] = pd.to_datetime(df["date"])
-        df = df.sort_values("date")
+            
+            except ValueError as e:
+                st.error(str(e))
         
         # -----------------------
         # DB確認
@@ -167,150 +177,127 @@ else:
         st.header("DB確認")
 
         if st.button("DBデータ確認"):
+            st.session_state["db_data"] = get_visit_data(selected_store.id)
+        if st.session_state["db_data"] is not None:
+            st.dataframe(
+                st.session_state["db_data"],
+                use_container_width=True
+    )
 
-            Session = sessionmaker(bind=engine)
-            session = Session()
 
-            rows = session.query(VisitData).filter_by(
-                store_id=selected_store.id
-            ).all()
 
-            session.close()
-
-            df_db = pd.DataFrame([
-                {
-                    "store_id": row.store_id,
-                    "date": row.date,
-                    "visits": row.visits
-                }
-                for row in rows
-            ])
-
-            st.dataframe(df_db.head())
-            st.success(f"{len(df_db)}件取得")
 
         if st.button("DBから予測"):
 
-           Session = sessionmaker(bind=engine)
-           session = Session()
+           df_forecast, model = forecast_from_db(
+               selected_store.id,
+               forecast_days
+           )
 
-           rows = session.query(VisitData).filter_by(
-               store_id=selected_store.id
-           ).all()
+           st.session_state["df_forecast"] = df_forecast
+           st.session_state["model"] = model
+           st.session_state["df_staff"] = None
 
-           session.close()
+           if df_forecast is None:
+                st.warning("予測できるデータがありません")
 
-           df_db = pd.DataFrame([
-               {
-                   "store_id": row.store_id,
-                   "date": row.date,
-                   "visits": row.visits
-               }
-                for row in rows
-           ])
+        if st.session_state["df_forecast"] is not None:
 
-           df_db["date"] = pd.to_datetime(df_db["date"])
-           df_db = df_db.sort_values("date")
+            df_forecast = st.session_state["df_forecast"]
 
-           model, le = train_lightgbm_model(df_db)
- 
-           last_date = df_db["date"].max()
-
-           df_forecast = forecast_visits(
-                model,
-                le,
-                last_date,
-                forecast_days
-    )
-
-           fig = px.line(
+            fig = px.line(
                 df_forecast,
                 x="date",
                 y="predicted_visits",
                 title="DBデータによる予測"
             )
 
-           st.plotly_chart(
+            st.plotly_chart(
                 fig,
                 use_container_width=True,
                 key="db_forecast_chart"
             )
 
-        # -----------------------
-        # 学習・予測
-        # -----------------------
-        st.header("3. 予測結果")
+            st.subheader("予測表")
 
-        model, le = train_lightgbm_model(df)
+            st.dataframe(
+                df_forecast.head(10),
+                use_container_width=True
+            )
 
-        last_date = df["date"].max()
+            st.header("4. 推奨薬剤師人数")
 
-        df_forecast = forecast_visits(
-            model,
-            le,
-            last_date,
-            forecast_days
+            if st.session_state["df_staff"] is None:
+                df_staff = st.session_state["df_forecast"].copy()
+                df_staff["推奨薬剤師数"] = (
+                    df_staff["predicted_visits"]
+                    .apply(get_staff_suggestion)
+                )
+                df_staff["実配置人数"] = df_staff["推奨薬剤師数"]
+
+                saved_staff = get_staffing(selected_store.id)
+
+                if not saved_staff.empty:
+                    for _, row in saved_staff.iterrows():
+
+                       df_staff.loc[
+                       df_staff["date"] == row["date"],
+                       "実配置人数"
+                       ] = row["staff_count"] 
+
+
+                st.session_state["df_staff"] = df_staff
+
+            edited_df = st.data_editor(
+                st.session_state["df_staff"][
+                    ["date", "predicted_visits", "推奨薬剤師数", "実配置人数"]
+                ],
+                use_container_width=True,
+                hide_index=True,
+
+                key="staff_editor"
+            )
+# ----------------------------
+# 一時保存、テスト用
+#-----------------------------
+            st.write("session_state")
+            st.write(st.session_state["df_staff"].dtypes)
+
+            st.write("edited_df")
+            st.write(edited_df.dtypes)
+
+
+
+
+
+
+            st.session_state["df_staff"]["実配置人数"] = edited_df["実配置人数"]
+            if st.button("実配置人数を保存"):
+
+                for _, row in st.session_state["df_staff"].iterrows():
+                    save_staffing(
+                        selected_store.id,
+                        row["date"],
+                        row["実配置人数"]
         )
-        fig = px.line(
-            df_forecast,
-            x="date",
-            y="predicted_visits",
-            title="予測来局者数"
-        )
 
-        st.plotly_chart(
-            fig,
-            use_container_width=True,
-            key="forecast_chart"
-        )
-        # -----------------------
-        # 予測表
-        # -----------------------
-        st.subheader("予測表")
-
-        st.dataframe(
-            df_forecast.head(10),
-            use_container_width=True
-        )
-
-        # -----------------------
-        # 推奨薬剤師人数
-        # -----------------------
-        st.header("4. 推奨薬剤師人数")
-
-        def get_staff_suggestion(visits):
-            return math.ceil(visits / 25)
-
-        df_staff = df_forecast.copy()
-
-        df_staff["推奨薬剤師数"] = (
-            df_staff["predicted_visits"]
-            .apply(get_staff_suggestion)
-        )
-
-        st.dataframe(
-            df_staff[
-                ["date", "predicted_visits", "推奨薬剤師数"]
-            ],
-            use_container_width=True
-        )
-
+                st.success("実配置人数を保存しました")
         # -----------------------
         # 特徴量重要度
         # -----------------------
-        st.header("5. 特徴量重要度")
+            st.header("5. 特徴量重要度")
 
-        fig2, ax = plt.subplots(figsize=(8, 5))
+            fig2, ax = plt.subplots(figsize=(8, 5))
 
-        lgb.plot_importance(
-            model,
-            max_num_features=10,
-            ax=ax
-        )
+            lgb.plot_importance(
+                st.session_state["model"],
+                max_num_features=10,
+                ax=ax
+            )
 
-        plt.tight_layout()
+            plt.tight_layout()
 
-        st.pyplot(fig2)
+            st.pyplot(fig2)
 
     else:
-        st.info("CSVファイルをアップロードしてください")
+        st.info("DB確認・予測機能は本部責任者以上が利用できます。")
