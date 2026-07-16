@@ -110,6 +110,23 @@ def show_db_data(user, selected_store):
                 use_container_width=True
             )
 
+def run_forecast(selected_store, forecast_days):
+    """DBから来局者予測を実行する"""
+
+    if st.button("DBから予測"):
+
+        df_forecast, model = forecast_from_db(
+            selected_store.id,
+            forecast_days
+        )
+
+        st.session_state["df_forecast"] = df_forecast
+        st.session_state["model"] = model
+        st.session_state["df_staff"] = None
+
+        if df_forecast is None:
+            st.warning("予測できるデータがありません")
+
 
 # -----------------------
 # ログイン画面(関数)
@@ -208,22 +225,14 @@ else:
         show_db_data(user, selected_store)
 
         # -----------------------
-        # DBから予測
+        # DBから予測(関数)
         # -----------------------
 
-        if st.button("DBから予測"):
+        run_forecast(selected_store, forecast_days)
 
-           df_forecast, model = forecast_from_db(
-               selected_store.id,
-               forecast_days
-           )
-
-           st.session_state["df_forecast"] = df_forecast
-           st.session_state["model"] = model
-           st.session_state["df_staff"] = None
-
-           if df_forecast is None:
-                st.warning("予測できるデータがありません")
+        # -----------------------
+        # 製図以下
+        # -----------------------
 
         if st.session_state["df_forecast"] is not None:
 
