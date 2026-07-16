@@ -202,6 +202,23 @@ def show_staffing(selected_store):
 
         st.success("実配置人数を保存しました")
 
+def show_feature_importance():
+    """特徴量重要度を表示する"""
+
+    st.header("5. 特徴量重要度")
+
+    fig2, ax = plt.subplots(figsize=(8, 5))
+
+    lgb.plot_importance(
+        st.session_state["model"],
+        max_num_features=10,
+        ax=ax
+    )
+
+    plt.tight_layout()
+
+    st.pyplot(fig2)
+
 
 # -----------------------
 # ログイン画面(関数)
@@ -314,28 +331,12 @@ else:
         # -----------------------
         #　推奨人数、実配置人数
         # -----------------------  
-
             show_staffing(selected_store)
-
-          
-
 
         # -----------------------
         # 特徴量重要度
         # -----------------------
-            st.header("5. 特徴量重要度")
-
-            fig2, ax = plt.subplots(figsize=(8, 5))
-
-            lgb.plot_importance(
-                st.session_state["model"],
-                max_num_features=10,
-                ax=ax
-            )
-
-            plt.tight_layout()
-
-            st.pyplot(fig2)
+            show_feature_importance()
 
     else:
         st.info("DB確認・予測機能は本部責任者以上が利用できます。")
