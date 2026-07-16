@@ -56,8 +56,9 @@ if "df_staff" not in st.session_state:
 # -----------------------
 # ログイン画面
 # -----------------------
-if st.session_state["user"] is None:
-
+def show_login():
+    """ログイン画面を表示する"""
+    
     st.title("🔐 ログイン")
 
     username = st.text_input("ユーザー名")
@@ -73,6 +74,12 @@ if st.session_state["user"] is None:
             st.rerun()
         else:
             st.error("ユーザー名またはパスワードが違います")
+
+# -----------------------
+# ログイン画面
+# -----------------------
+if st.session_state["user"] is None:
+    show_login()
 
 # -----------------------
 # ログイン後画面
