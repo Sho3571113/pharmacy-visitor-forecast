@@ -92,6 +92,24 @@ def show_csv_upload(user):
 
     return uploaded_file
 
+def show_db_data(user, selected_store):
+    """DBデータ確認画面を表示する"""
+
+    if user.role in ["hq_manager", "admin"]:
+
+        st.header("DB確認")
+
+        if st.button("DBデータ確認"):
+            st.session_state["db_data"] = get_visit_data(
+                selected_store.id
+            )
+
+        if st.session_state["db_data"] is not None:
+            st.dataframe(
+                st.session_state["db_data"],
+                use_container_width=True
+            )
+
 
 # -----------------------
 # ログイン画面(関数)
@@ -185,22 +203,13 @@ else:
                 st.error(str(e))
         
         # -----------------------
-        # DB確認
+        # DB確認(関数)
         # -----------------------
-    if user.role in ["hq_manager", "admin"]:
-        
-        st.header("DB確認")
+        show_db_data(user, selected_store)
 
-        if st.button("DBデータ確認"):
-            st.session_state["db_data"] = get_visit_data(selected_store.id)
-        if st.session_state["db_data"] is not None:
-            st.dataframe(
-                st.session_state["db_data"],
-                use_container_width=True
-    )
-
-
-
+        # -----------------------
+        # DBから予測
+        # -----------------------
 
         if st.button("DBから予測"):
 
