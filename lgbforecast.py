@@ -4,11 +4,24 @@ from sklearn.preprocessing import LabelEncoder
 
 #特徴量抽出
 def create_features(df):
+    df = df.copy()
+
     df["dayofweek"] = df["date"].dt.dayofweek
     df["day"] = df["date"].dt.day
     df["month"] = df["date"].dt.month
     df["year"] = df["date"].dt.year
     df["weekofyear"] = df["date"].dt.isocalendar().week.astype(int)
+    
+    if "visits" in df.columns:
+        df["lag1"] = df["visits"].shift(1)
+        df["rolling7"] = (
+            df["visits"]
+            .shift(1)
+            .rolling(window=7, min_periods=1)
+            .mean()
+        )
+
+
 
     return df
 
@@ -16,6 +29,7 @@ def create_features(df):
 def train_lightgbm_model(df):
     df = df.copy()
     df = create_features(df)
+    df = df.dropna().reset_index(drop=True)
 
     #天気を数値に直す
     le = None
@@ -30,7 +44,14 @@ def train_lightgbm_model(df):
         df["temperature"] = 0.0
 
     #特徴量に追加
-    X = df[["dayofweek", "day", "month", "weather_encoded", "temperature"]]
+    X = df[["dayofweek", 
+            "day",
+            "month", 
+            "lag1",
+            "rolling7",
+            "weather_encoded", 
+            "temperature"]]
+    
     y = df["visits"]
 
     model = lgb.LGBMRegressor(
@@ -47,30 +68,82 @@ def train_lightgbm_model(df):
     return model, le
 
 #予測用関数の修正
-def forecast_visits(model, le, last_date, forecast_days, weather_list=None, temp_list=None):
-    future_dates = pd.date_range(start=last_date + pd.Timedelta(days=1), periods=forecast_days)
-
-    future_df = pd.DataFrame({"date":future_dates})
-    future_df = create_features(future_df)
-
-#天気と気温のリスト
-    if (
-        le is not None
-        and weather_list
-        and len(weather_list) == forecast_days
+def forecast_visits(
+        model,
+        le, 
+        history_df,
+        last_date,
+        forecast_days,
+        weather_list=None,
+        temp_list=None
 ):
-        future_df["weather_encoded"] = le.transform(weather_list)
+    history = history_df.copy()
+    history["date"] = pd.to_datetime(history["date"])
 
-    else:
-        future_df["weather_encoded"] = 0
+    results = []
 
-    if temp_list and len(temp_list) == forecast_days:
-        future_df["temperature"] = temp_list
-    else:
-        future_df["temperature"] =0.0
+    for i in range(forecast_days):
 
-    X_future = future_df[['dayofweek', 'day', 'month', 'weather_encoded', 'temperature']]
-    future_df["predicted_visits"] = model.predict(X_future).round()
+        target_date = last_date + pd.Timedelta(days=i + 1)
 
-    return future_df
+        lag1 = history["visits"].iloc[-1]
+        rolling7 = history["visits"].tail(7).mean()
+
+        feature = pd.DataFrame({
+            "dayofweek": [target_date.dayofweek],
+            "day": [target_date.day],
+            "month": [target_date.month],
+            "lag1": [lag1],
+            "rolling7": [rolling7]
+        })
+
+                # 天気
+        if (
+            le is not None
+            and weather_list
+            and len(weather_list) == forecast_days
+        ):
+            feature["weather_encoded"] = le.transform([weather_list[i]])[0]
+        else:
+            feature["weather_encoded"] = 0
+
+        # 気温
+        if temp_list and len(temp_list) == forecast_days:
+            feature["temperature"] = temp_list[i]
+        else:
+            feature["temperature"] = 0.0
+
+        # 予測
+        X_future = feature[
+            [
+                "dayofweek",
+                "day",
+                "month",
+                "lag1",
+                "rolling7",
+                "weather_encoded",
+                "temperature"
+            ]
+        ]
+
+        pred = round(model.predict(X_future)[0])  
+
+                # 結果を保存
+        results.append({
+            "date": target_date,
+            "predicted_visits": pred
+        })
+
+        # 次の日の予測に使うため履歴へ追加
+        history = pd.concat(
+            [
+                history,
+                pd.DataFrame({
+                    "date": [target_date],
+                    "visits": [pred]
+                })
+            ],
+            ignore_index=True
+        )
+    return pd.DataFrame(results)
 

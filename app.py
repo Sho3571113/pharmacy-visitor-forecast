@@ -95,7 +95,7 @@ def show_csv_upload(user):
 def show_db_data(user, selected_store):
     """DBデータ確認画面を表示する"""
 
-    if user.role in ["hq_manager", "admin"]:
+    if user.role in ["store_manager", "hq_manager", "admin"]:
 
         st.header("DB確認")
 
@@ -314,18 +314,18 @@ else:
         # -----------------------
         # DB確認(関数)
         # -----------------------
-        show_db_data(user, selected_store)
+    show_db_data(user, selected_store)
 
         # -----------------------
         # DBから予測(関数)
         # -----------------------
 
-        run_forecast(selected_store, forecast_days)
+    run_forecast(selected_store, forecast_days)
 
         # -----------------------
         # 製図以下
         # -----------------------
-        if st.session_state["df_forecast"] is not None:
+    if st.session_state["df_forecast"] is not None:
             show_forecast_result()
 
         # -----------------------
@@ -338,5 +338,3 @@ else:
         # -----------------------
             show_feature_importance()
 
-    else:
-        st.info("DB確認・予測機能は本部責任者以上が利用できます。")

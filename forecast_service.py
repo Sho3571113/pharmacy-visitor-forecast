@@ -24,10 +24,13 @@ def forecast_from_db(store_id, forecast_days):
 
     #予測
     last_date = df_db["date"].max()
+    #最終日確認
+    print(last_date)
 
     df_forecast = forecast_visits(
         model,
         le,
+        df_db,
         last_date,
         forecast_days
     )
