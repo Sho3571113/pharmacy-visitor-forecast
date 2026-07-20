@@ -27,6 +27,9 @@ def create_features(df):
 
 #モデル学習
 def train_lightgbm_model(df):
+    if len(df) < 30:
+        raise ValueError("学習データが少なすぎます")
+    
     df = df.copy()
     df = create_features(df)
     df = df.dropna().reset_index(drop=True)
@@ -60,10 +63,8 @@ def train_lightgbm_model(df):
     random_state=42
     )
 
-
     model.fit(X, y)
-    if len(df) < 30:
-        raise ValueError("学習データが少なすぎます")
+   
 
     return model, le
 
@@ -146,4 +147,5 @@ def forecast_visits(
             ignore_index=True
         )
     return pd.DataFrame(results)
+
 
