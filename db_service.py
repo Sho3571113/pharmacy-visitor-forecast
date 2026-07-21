@@ -1,7 +1,8 @@
 from sqlalchemy.orm import sessionmaker
 from db_config import engine
-from models import Store, VisitData
+from models import Store, VisitData, User, ForecastResult
 import pandas as pd
+import bcrypt
 
 Session = sessionmaker(bind=engine)
 
@@ -10,6 +11,67 @@ def get_stores():
     stores = session.query(Store).all()
     session.close()
     return stores
+
+def get_users():
+    session = Session()
+
+    rows = session.query(User).all()
+
+    session.close()
+
+    df = pd.DataFrame([
+        {
+            "id": row.id,
+            "username": row.username,
+            "display_name": row.display_name,
+            "role": row.role,
+            "store_id": row.store_id,
+            "created_at": row.created_at,
+        }
+        for row in rows
+    ])
+
+    return df
+
+def create_user(
+    username,
+    display_name,
+    password,
+    role,
+    store_id,
+):
+    session = Session()
+    
+    try:
+        existing = (
+            session.query(User)
+            .filter(User.username == username)
+            .first()
+        )
+        if existing:
+            session.close()
+            raise ValueError("このユーザー名は既に使用されています。")
+
+        hashed_password = bcrypt.hashpw(
+            password.encode(),
+            bcrypt.gensalt()
+        ).decode()
+
+        user = User(
+            username=username,
+            display_name=display_name,
+            hashed_password=hashed_password,
+            role=role,
+            store_id=store_id,
+        )
+
+        session.add(user)
+        session.commit()
+    
+    finally:
+        session.close()
+
+
 
 
 def save_visit_data(df, store_id):
@@ -69,3 +131,60 @@ def get_visit_data(store_id):
     ])
 
     return df
+
+def save_forecast_result(store_id, date, predicted_visits):
+
+    session = Session()
+
+    try:
+        forecast = (
+            session.query(ForecastResult)
+            .filter(
+                ForecastResult.store_id == store_id,
+                ForecastResult.date == date
+            )
+            .first()
+        )
+
+        if forecast:
+            forecast.predicted_visits = predicted_visits
+
+        else:
+            forecast = ForecastResult(
+                store_id=store_id,
+                date=date,
+                predicted_visits=predicted_visits
+            )
+
+            session.add(forecast)
+
+        session.commit()
+
+    finally:
+        session.close()
+
+def get_forecast_result(store_id):
+
+    session = Session()
+
+    try:
+        rows = (
+            session.query(ForecastResult)
+            .filter(ForecastResult.store_id == store_id)
+            .order_by(ForecastResult.date)
+            .all()
+        )
+
+        df = pd.DataFrame([
+            {
+                "date": row.date,
+                "predicted_visits": row.predicted_visits
+            }
+            for row in rows
+        ])
+
+        return df
+
+    finally:
+        session.close()
+

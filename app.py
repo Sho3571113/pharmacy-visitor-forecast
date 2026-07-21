@@ -9,16 +9,15 @@ import matplotlib.pyplot as plt
 import math
 
 from authentication import authenticate_user
-from db_service import get_stores, save_visit_data, get_visit_data
+from db_service import get_users, get_stores, save_visit_data, get_visit_data, create_user, get_forecast_result
 
-from forecast_service import forecast_from_db
+from forecast_service import ( forecast_from_db, train_model_from_db )
 
 from staffing_service import (
     save_staffing,
     get_staffing
 )
 
-stores = get_stores()
 
 # -----------------------
 #共通関数
@@ -110,29 +109,35 @@ def show_db_data(user, selected_store):
                 use_container_width=True
             )
 
-def run_forecast(selected_store, forecast_days):
+def run_forecast(user, selected_store, forecast_days):
     """DBから来局者予測を実行する"""
+    if user.role  in ["hq_manager", "admin"]:
 
-    if st.button("DBから予測"):
+        if st.button("DBから予測"):
 
-        df_forecast, model = forecast_from_db(
+            df_forecast, model = forecast_from_db(
             selected_store.id,
             forecast_days
         )
+            if df_forecast is None:
+                st.warning("モデルが未学習、または予測できるデータがありません。")
+                return
 
-        st.session_state["df_forecast"] = df_forecast
-        st.session_state["model"] = model
-        st.session_state["df_staff"] = None
 
-        if df_forecast is None:
-            st.warning("予測できるデータがありません")
-def show_forecast_result():
+            st.session_state["df_forecast"] = df_forecast
+            st.session_state["model"] = model
+            st.session_state["df_staff"] = None
+
+        
+def show_forecast_result(selected_store):
     """予測結果を表示する"""
-
-    if st.session_state["df_forecast"] is None:
+    df_forecast = get_forecast_result(selected_store.id)
+    if df_forecast.empty:
         return
 
-    df_forecast = st.session_state["df_forecast"]
+   
+
+    df_forecast = get_forecast_result(selected_store.id)
 
     fig = px.line(
         df_forecast,
@@ -255,6 +260,15 @@ else:
     # -----------------------
     # 店舗選択
     # -----------------------
+    if user.role in ["hq_manager", "admin"]:
+        stores = get_stores()
+    else:
+        stores = [
+            store
+            for store in get_stores()
+            if store.id == user.store_id
+        ]
+
     st.header("店舗選択")
 
     selected_store = st.selectbox(
@@ -270,6 +284,19 @@ else:
     # -----------------------
     # 予測条件
     # -----------------------
+    if user.role in ["hq_manager", "admin"]:
+
+        st.header("モデル管理")
+
+        if st.button("モデル学習"):
+
+            success = train_model_from_db(selected_store.id)
+
+            if success:
+                st.success("モデル学習が完了しました。")
+            else:
+                st.warning("学習できるデータがありません。")
+
     st.header("2. 予測条件の設定")
 
     col1, col2 = st.columns(2)
@@ -320,13 +347,13 @@ else:
         # DBから予測(関数)
         # -----------------------
 
-    run_forecast(selected_store, forecast_days)
+    run_forecast(user, selected_store, forecast_days)
 
         # -----------------------
         # 製図以下
         # -----------------------
     if st.session_state["df_forecast"] is not None:
-            show_forecast_result()
+            show_forecast_result(selected_store)
 
         # -----------------------
         #　推奨人数、実配置人数
@@ -338,3 +365,52 @@ else:
         # -----------------------
             show_feature_importance()
 
+#ユーザー管理
+    if user.role == "admin":
+        df_users = get_users()
+        st.dataframe(df_users)
+        stores = get_stores()
+
+
+    # ユーザー追加フォーム
+        username = st.text_input("ユーザー名")
+        display_name = st.text_input("表示名")
+        password = st.text_input(
+        "パスワード",
+        type="password"
+        )
+        role = st.selectbox(
+        "権限",
+        [
+            "general",
+            "store_manager",
+            "hq_manager",
+            "admin",
+        ],
+        )
+    
+        if role in ["general", "store_manager"]:
+            selected_store = st.selectbox(
+            "店舗",
+            stores,
+            format_func=lambda x: x.store_name
+    )
+            store_id = selected_store.id
+        else:
+            store_id = None
+
+        if st.button("ユーザー登録"):
+            try:
+                create_user(
+                username,
+                display_name,
+                password,
+                role,
+                store_id,
+            )
+                st.success("ユーザーを登録しました。")
+
+            except ValueError as e:
+                st.error(str(e))
+    
+    

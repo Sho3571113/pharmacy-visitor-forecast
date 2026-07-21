@@ -1,7 +1,7 @@
 from sqlalchemy.orm import declarative_base
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Date
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Date, Float
 from datetime import datetime
-from sqlalchemy import Column, Integer, ForeignKey, Date
+
 
 Base = declarative_base()
 
@@ -53,3 +53,21 @@ class Staffing(Base):
     date = Column(Date, nullable=False)
 
     staff_count = Column(Integer, nullable=False)
+
+class ForecastResult(Base):
+    __tablename__ = "forecast_results"
+
+    id = Column(Integer, primary_key=True)
+
+    store_id = Column(
+        Integer,
+        ForeignKey("stores.id"),
+        nullable=False
+    )
+
+    date = Column(Date, nullable=False)
+
+    predicted_visits = Column(
+        Float,
+        nullable=False
+    )
