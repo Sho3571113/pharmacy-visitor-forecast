@@ -27,6 +27,7 @@ def load_app_module():
     staffing_service = ModuleType("staffing_service")
     staffing_service.get_staffing = MagicMock()
     staffing_service.save_staffing = MagicMock()
+    db_service.add_store = MagicMock()
 
     plotly = ModuleType("plotly")
     plotly_express = MagicMock()

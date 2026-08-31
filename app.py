@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import math
 
 from authentication import authenticate_user
-from db_service import get_users, get_stores, save_visit_data, get_visit_data, create_user, get_forecast_result
+from db_service import get_users, get_stores, save_visit_data, get_visit_data, create_user, get_forecast_result, add_store
 
 from forecast_service import ( forecast_from_db, train_model_from_db )
 
@@ -370,6 +370,20 @@ else:
         df_users = get_users()
         st.dataframe(df_users)
         stores = get_stores()
+        st.header("店舗管理")
+
+        store_name = st.text_input("店舗名")
+
+        if st.button("店舗追加"):
+            if not store_name:
+                st.error("店舗名を入力してください")
+            else:
+                result = add_store(store_name)
+
+                if result:
+                    st.success("店舗を追加しました")
+                else:
+                    st.warning("その店舗は既に存在します")
 
 
     # ユーザー追加フォーム

@@ -188,3 +188,26 @@ def get_forecast_result(store_id):
     finally:
         session.close()
 
+def add_store(store_name):
+
+    session = Session()
+
+    try:
+        existing = (
+            session.query(Store)
+            .filter_by(store_name=store_name)
+            .first()
+        )
+
+        if existing:
+            return False
+
+        session.add(
+            Store(store_name=store_name)
+        )
+
+        session.commit()
+        return True
+
+    finally:
+        session.close()

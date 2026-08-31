@@ -144,3 +144,54 @@ def test_save_visit_data_accepts_timestamp():
     session.add.assert_called_once()
     session.commit.assert_called_once()
     session.close.assert_called_once()
+
+def test_add_store_adds_new_store():
+    # Arrange
+    session = MagicMock()
+    session.query.return_value.filter_by.return_value.first.return_value = None
+
+    # Act
+    with patch.object(db_service, "Session", return_value=session):
+        result = db_service.add_store("横浜店")
+
+    # Assert
+    assert result is True
+
+    session.query.assert_called_once_with(db_service.Store)
+    session.query.return_value.filter_by.assert_called_once_with(
+        store_name="横浜店"
+    )
+
+    session.add.assert_called_once()
+    added_store = session.add.call_args.args[0]
+
+    assert isinstance(added_store, db_service.Store)
+    assert added_store.store_name == "横浜店"
+
+    session.commit.assert_called_once()
+    session.close.assert_called_once()
+
+def test_add_store_does_not_add_existing_store():
+    # Arrange
+    session = MagicMock()
+
+    existing_store = SimpleNamespace(
+        id=4,
+        store_name="横浜店"
+    )
+
+    session.query.return_value.filter_by.return_value.first.return_value = existing_store
+
+    # Act
+    with patch.object(db_service, "Session", return_value=session):
+        result = db_service.add_store("横浜店")
+
+    # Assert
+    assert result is False
+    session.query.assert_called_once_with(db_service.Store)
+    session.query.return_value.filter_by.assert_called_once_with(
+        store_name="横浜店"
+    )
+    session.add.assert_not_called()
+    session.commit.assert_not_called()
+    session.close.assert_called_once()

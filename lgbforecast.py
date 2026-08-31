@@ -79,7 +79,6 @@ def forecast_visits(
         temp_list=None
 ):
     history = history_df.copy()
-    history["date"] = pd.to_datetime(history["date"])
 
     results = []
 
