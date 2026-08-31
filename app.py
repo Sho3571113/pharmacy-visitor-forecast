@@ -382,6 +382,7 @@ else:
 
                 if result:
                     st.success("店舗を追加しました")
+                    st.rerun()
                 else:
                     st.warning("その店舗は既に存在します")
 
