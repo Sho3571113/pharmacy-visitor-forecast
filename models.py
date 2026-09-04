@@ -71,3 +71,10 @@ class ForecastResult(Base):
         Float,
         nullable=False
     )
+
+class SystemSetting(Base):
+    __tablename__ = "system_settings"
+
+    id = Column(Integer, primary_key=True)
+    setting_name = Column(String, unique=True, nullable=False)
+    setting_value = Column(Integer, nullable=False)

@@ -19,6 +19,7 @@ def load_app_module():
     db_service.save_visit_data = MagicMock()
     db_service.create_user = MagicMock()
     db_service.get_forecast_result = MagicMock(return_value=[])
+    db_service.get_system_setting = MagicMock(return_value=25)
     forecast_service = ModuleType("forecast_service")
     forecast_service.forecast_from_db = MagicMock()
     forecast_service = ModuleType("forecast_service")
@@ -27,6 +28,7 @@ def load_app_module():
     staffing_service = ModuleType("staffing_service")
     staffing_service.get_staffing = MagicMock()
     staffing_service.save_staffing = MagicMock()
+    staffing_service.get_staff_suggestion = MagicMock()
     db_service.add_store = MagicMock()
 
     plotly = ModuleType("plotly")
@@ -57,19 +59,3 @@ def load_app_module():
 
     return app
 
-
-def test_get_staff_suggestion_rounds_up_per_25_visits():
-    # Arrange（準備）
-    app = load_app_module()
-
-    # Act（実行）
-    zero_visits = app.get_staff_suggestion(0)
-    one_visit = app.get_staff_suggestion(1)
-    twenty_five_visits = app.get_staff_suggestion(25)
-    twenty_six_visits = app.get_staff_suggestion(26)
-
-    # Assert（確認）
-    assert zero_visits == 0
-    assert one_visit == 1
-    assert twenty_five_visits == 1
-    assert twenty_six_visits == 2

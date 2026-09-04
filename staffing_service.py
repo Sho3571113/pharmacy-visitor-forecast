@@ -1,4 +1,5 @@
 from sqlalchemy.orm import sessionmaker
+from math import ceil
 from db_config import engine
 from models import Staffing
 import pandas as pd
@@ -53,3 +54,8 @@ def get_staffing(store_id):
     ])
 
     return df
+
+def get_staff_suggestion(visits, visits_per_pharmacist):
+    return ceil(
+        visits / visits_per_pharmacist
+    )

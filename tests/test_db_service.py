@@ -195,3 +195,69 @@ def test_add_store_does_not_add_existing_store():
     session.add.assert_not_called()
     session.commit.assert_not_called()
     session.close.assert_called_once()
+
+def test_save_system_setting_adds_new_setting():
+    # Arrange
+    session = MagicMock()
+    session.__enter__.return_value = session
+    session.query.return_value.filter_by.return_value.first.return_value = None
+
+    # Act
+    with patch.object(db_service, "Session", return_value=session):
+        db_service.save_system_setting(
+            "visits_per_pharmacist",
+            25
+        )
+
+    # Assert
+    session.query.assert_called_once_with(
+        db_service.SystemSetting
+    )
+
+    session.query.return_value.filter_by.assert_called_once_with(
+        setting_name="visits_per_pharmacist"
+    )
+
+    session.add.assert_called_once()
+
+    added_setting = session.add.call_args.args[0]
+
+    assert isinstance(
+        added_setting,
+        db_service.SystemSetting
+    )
+
+    assert added_setting.setting_name == "visits_per_pharmacist"
+    assert added_setting.setting_value == 25
+
+    session.commit.assert_called_once()
+
+def test_get_system_setting_returns_saved_value():
+    # Arrange
+    session = MagicMock()
+    session.__enter__.return_value = session
+
+    setting = SimpleNamespace(
+        setting_name="visits_per_pharmacist",
+        setting_value=30
+    )
+
+    session.query.return_value.filter_by.return_value.first.return_value = setting
+
+    # Act
+    with patch.object(db_service, "Session", return_value=session):
+        result = db_service.get_system_setting(
+            "visits_per_pharmacist",
+            25
+        )
+
+    # Assert
+    assert result == 30
+
+    session.query.assert_called_once_with(
+        db_service.SystemSetting
+    )
+
+    session.query.return_value.filter_by.assert_called_once_with(
+        setting_name="visits_per_pharmacist"
+    )

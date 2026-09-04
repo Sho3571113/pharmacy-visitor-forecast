@@ -5,8 +5,8 @@ import streamlit as st
 import plotly.express as px
 
 from authentication import authenticate_user
-from db_service import get_stores, get_forecast_result
-from staffing_service import get_staffing
+from db_service import get_stores, get_forecast_result,get_system_setting
+from staffing_service import get_staffing, get_staff_suggestion
 # -----------------------
 # Streamlit設定
 # -----------------------
@@ -22,14 +22,6 @@ st.set_page_config(
 
 if "user" not in st.session_state:
     st.session_state["user"] = None
-
-# -----------------------
-# 共通関数
-# -----------------------
-
-def get_staff_suggestion(visits):
-    return int((visits + 24) // 25)
-
 
 # -----------------------
 # ログイン画面
@@ -101,8 +93,14 @@ def show_dashboard(selected_store):
         latest["predicted_visits"]
     )
 
+    visits_per_pharmacist = get_system_setting(
+    "visits_per_pharmacist",
+    25
+    )
+
     recommended_staff = get_staff_suggestion(
-        predicted_visits
+        predicted_visits,
+        visits_per_pharmacist
     )
 
     # -----------------------

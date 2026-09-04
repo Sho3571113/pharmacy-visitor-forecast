@@ -80,3 +80,10 @@ def test_get_staffing_returns_empty_dataframe_when_no_data():
     # Assert（確認）
     assert result.empty
     session.close.assert_called_once()
+
+def test_get_staff_suggestion_boundary_values():
+    # Arrange / Act / Assert
+
+    assert staffing_service.get_staff_suggestion(24, 25) == 1
+    assert staffing_service.get_staff_suggestion(25, 25) == 1
+    assert staffing_service.get_staff_suggestion(26, 25) == 2

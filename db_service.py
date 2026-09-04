@@ -1,6 +1,6 @@
 from sqlalchemy.orm import sessionmaker
 from db_config import engine
-from models import Store, VisitData, User, ForecastResult
+from models import Store, VisitData, User, ForecastResult, SystemSetting
 import pandas as pd
 import bcrypt
 
@@ -211,3 +211,35 @@ def add_store(store_name):
 
     finally:
         session.close()
+
+def save_system_setting(setting_name, setting_value):
+    with Session() as session:
+
+        setting = session.query(SystemSetting).filter_by(
+            setting_name=setting_name
+        ).first()
+
+        if setting:
+            setting.setting_value = setting_value
+
+        else:
+            setting = SystemSetting(
+                setting_name=setting_name,
+                setting_value=setting_value
+            )
+
+            session.add(setting)
+
+        session.commit()
+
+def get_system_setting(setting_name, default=None):
+    with Session() as session:
+
+        setting = session.query(SystemSetting).filter_by(
+            setting_name=setting_name
+        ).first()
+
+        if setting:
+            return setting.setting_value
+
+        return default

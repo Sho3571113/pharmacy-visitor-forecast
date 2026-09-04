@@ -1,9 +1,16 @@
 import streamlit as st
 import pandas as pd
-from math import ceil
 
-from db_service import get_stores
-from staffing_service import get_staffing, save_staffing
+from db_service import (
+    get_stores,
+    get_system_setting
+)
+
+from staffing_service import(
+     get_staffing, 
+     save_staffing, 
+     get_staff_suggestion
+)
 
 
 user = st.session_state.get("user")
@@ -58,9 +65,19 @@ else:
     # 推奨薬剤師数を計算
     # -----------------------
 
+    visits_per_pharmacist = get_system_setting(
+    "visits_per_pharmacist",
+    25
+)
+
     df_staff["推奨薬剤師数"] = (
         df_staff["predicted_visits"]
-        .apply(lambda visits: ceil(visits / 25))
+        .apply(
+            lambda visits: get_staff_suggestion(
+                visits,
+                visits_per_pharmacist
+            )
+        )
     )
 
     # -----------------------

@@ -1,6 +1,11 @@
 import streamlit as st
 
-from db_service import get_stores
+from db_service import (
+    get_stores,
+    get_system_setting,
+    save_system_setting
+)
+
 from forecast_service import train_model_from_db
 
 
@@ -37,6 +42,31 @@ selected_store = st.selectbox(
     format_func=lambda x: x.store_name
 )
 
+# -----------------------
+# 人数設定
+# -----------------------
+st.subheader("人員配置設定")
+
+visits_per_pharmacist = get_system_setting(
+    "visits_per_pharmacist",
+    25
+)
+
+new_visits_per_pharmacist = st.number_input(
+    "薬剤師1人あたりの担当来局者数",
+    min_value=1,
+    value=visits_per_pharmacist,
+    step=1
+)
+
+if st.button("設定を保存"):
+
+    save_system_setting(
+        "visits_per_pharmacist",
+        new_visits_per_pharmacist
+    )
+
+    st.success("設定を保存しました。")
 
 # -----------------------
 # モデル学習
