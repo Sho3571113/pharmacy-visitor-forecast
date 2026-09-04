@@ -2,30 +2,11 @@
 # 📦 インポート
 # -----------------------
 import streamlit as st
-import pandas as pd
 import plotly.express as px
-import lightgbm as lgb
-import matplotlib.pyplot as plt
-import math
 
 from authentication import authenticate_user
-from db_service import get_users, get_stores, save_visit_data, get_visit_data, create_user, get_forecast_result, add_store
-
-from forecast_service import ( forecast_from_db, train_model_from_db )
-
-from staffing_service import (
-    save_staffing,
-    get_staffing
-)
-
-
-# -----------------------
-#共通関数
-# -----------------------
-def get_staff_suggestion(visits):
-    return math.ceil(visits / 25)
-
-
+from db_service import get_stores, get_forecast_result
+from staffing_service import get_staffing
 # -----------------------
 # Streamlit設定
 # -----------------------
@@ -34,398 +15,275 @@ st.set_page_config(
     layout="centered"
 )
 
+
 # -----------------------
 # セッション管理
 # -----------------------
+
 if "user" not in st.session_state:
     st.session_state["user"] = None
 
-if "df_forecast" not in st.session_state:
-    st.session_state["df_forecast"] = None
+# -----------------------
+# 共通関数
+# -----------------------
 
-if "model" not in st.session_state:
-    st.session_state["model"] = None
+def get_staff_suggestion(visits):
+    return int((visits + 24) // 25)
 
-if "db_data" not in st.session_state:
-    st.session_state["db_data"] = None
-
-if "df_staff" not in st.session_state:
-    st.session_state["df_staff"] = None
 
 # -----------------------
-# 関数
+# ログイン画面
 # -----------------------
+
 def show_login():
     """ログイン画面を表示する"""
 
     st.title("🔐 ログイン")
 
     username = st.text_input("ユーザー名")
-    password = st.text_input("パスワード", type="password")
+
+    password = st.text_input(
+        "パスワード",
+        type="password"
+    )
 
     if st.button("ログイン"):
 
-        user = authenticate_user(username, password)
+        user = authenticate_user(
+            username,
+            password
+        )
 
         if user:
             st.session_state["user"] = user
             st.success("ログイン成功")
             st.rerun()
+
         else:
-            st.error("ユーザー名またはパスワードが違います")
-
-def show_csv_upload(user):
-    """CSVアップロード画面を表示する"""
-
-    if user.role in ["store_manager", "hq_manager", "admin"]:
-
-        st.header("1. 来局データのアップロード")
-
-        uploaded_file = st.file_uploader(
-            "CSVファイルを選択（列名: date, visits）",
-            type="csv"
-        )
-
-    else:
-        uploaded_file = None
-
-    return uploaded_file
-
-def show_db_data(user, selected_store):
-    """DBデータ確認画面を表示する"""
-
-    if user.role in ["store_manager", "hq_manager", "admin"]:
-
-        st.header("DB確認")
-
-        if st.button("DBデータ確認"):
-            st.session_state["db_data"] = get_visit_data(
-                selected_store.id
+            st.error(
+                "ユーザー名またはパスワードが違います"
             )
 
-        if st.session_state["db_data"] is not None:
-            st.dataframe(
-                st.session_state["db_data"],
-                use_container_width=True
-            )
 
-def run_forecast(user, selected_store, forecast_days):
-    """DBから来局者予測を実行する"""
-    if user.role  in ["hq_manager", "admin"]:
+# -----------------------
+# ダッシュボード
+# -----------------------
 
-        if st.button("DBから予測"):
+def show_dashboard(selected_store):
+    """ダッシュボードを表示する"""
 
-            df_forecast, model = forecast_from_db(
-            selected_store.id,
-            forecast_days
-        )
-            if df_forecast is None:
-                st.warning("モデルが未学習、または予測できるデータがありません。")
-                return
+    st.title("🏠 ダッシュボード")
 
+    st.caption(
+        f"{selected_store.store_name} の状況"
+    )
 
-            st.session_state["df_forecast"] = df_forecast
-            st.session_state["model"] = model
-            st.session_state["df_staff"] = None
+    df_forecast = get_forecast_result(
+        selected_store.id
+    )
 
-        
-def show_forecast_result(selected_store):
-    """予測結果を表示する"""
-    df_forecast = get_forecast_result(selected_store.id)
     if df_forecast.empty:
+
+        st.info(
+            "まだ予測データがありません。"
+            "来局者予測画面から予測を実行してください。"
+        )
+
         return
 
-   
+    # -----------------------
+    # 最新の予測データ
+    # -----------------------
 
-    df_forecast = get_forecast_result(selected_store.id)
+    latest = df_forecast.iloc[0]
+
+    predicted_visits = int(
+        latest["predicted_visits"]
+    )
+
+    recommended_staff = get_staff_suggestion(
+        predicted_visits
+    )
+
+    # -----------------------
+    # 実配置人数
+    # -----------------------
+
+    df_staffing = get_staffing(
+        selected_store.id
+    )
+
+    actual_staff = None
+
+    if not df_staffing.empty:
+
+        matching = df_staffing[
+            df_staffing["date"] == latest["date"]
+        ]
+
+        if not matching.empty:
+
+            actual_staff = int(
+                matching.iloc[0]["staff_count"]
+            )
+
+    if actual_staff is None:
+        actual_staff = recommended_staff
+
+    # -----------------------
+    # 人員状況
+    # -----------------------
+
+    shortage = (
+        recommended_staff
+        - actual_staff
+    )
+
+    # -----------------------
+    # KPI
+    # -----------------------
+
+    col1, col2, col3, col4 = st.columns(4)
+
+    with col1:
+
+        st.metric(
+            "予測来局者数",
+            f"{predicted_visits}人"
+        )
+
+    with col2:
+
+        st.metric(
+            "推奨薬剤師数",
+            f"{recommended_staff}人"
+        )
+
+    with col3:
+
+        st.metric(
+            "実配置人数",
+            f"{actual_staff}人"
+        )
+
+    with col4:
+
+        if shortage > 0:
+
+            st.metric(
+                "人員状況",
+                f"{shortage}人不足"
+            )
+
+        elif shortage < 0:
+
+            st.metric(
+                "人員状況",
+                f"{abs(shortage)}人余力"
+            )
+
+        else:
+
+            st.metric(
+                "人員状況",
+                "適正"
+            )
+
+    # -----------------------
+    # 予測グラフ
+    # -----------------------
+
+    st.subheader(
+        "今後の来局者数予測"
+    )
 
     fig = px.line(
         df_forecast,
         x="date",
         y="predicted_visits",
-        title="DBデータによる予測"
+        markers=True,
+        labels={
+            "date": "日付",
+            "predicted_visits": "予測来局者数"
+        }
     )
 
     st.plotly_chart(
         fig,
-        use_container_width=True,
-        key="db_forecast_chart"
-    )
-
-    st.subheader("予測表")
-
-    st.dataframe(
-        df_forecast.head(10),
         use_container_width=True
     )
 
-def show_staffing(selected_store):
-    """スタッフ配置画面を表示する"""
-
-    st.header("4. 推奨薬剤師人数")
-
-    if st.session_state["df_staff"] is None:
-        df_staff = st.session_state["df_forecast"].copy()
-
-        df_staff["推奨薬剤師数"] = (
-            df_staff["predicted_visits"]
-            .apply(get_staff_suggestion)
-        )
-
-        df_staff["実配置人数"] = df_staff["推奨薬剤師数"]
-
-        saved_staff = get_staffing(selected_store.id)
-
-        if not saved_staff.empty:
-            for _, row in saved_staff.iterrows():
-                df_staff.loc[
-                    df_staff["date"] == row["date"],
-                    "実配置人数"
-                ] = row["staff_count"]
-
-        st.session_state["df_staff"] = df_staff
-
-    edited_df = st.data_editor(
-        st.session_state["df_staff"][
-            ["date", "predicted_visits", "推奨薬剤師数", "実配置人数"]
-        ],
-        use_container_width=True,
-        hide_index=True,
-        key="staff_editor"
-    )
-
-    st.session_state["df_staff"]["実配置人数"] = edited_df["実配置人数"]
-
-    if st.button("実配置人数を保存"):
-
-        for _, row in st.session_state["df_staff"].iterrows():
-            save_staffing(
-                selected_store.id,
-                row["date"],
-                row["実配置人数"]
-            )
-
-        st.success("実配置人数を保存しました")
-
-def show_feature_importance():
-    """特徴量重要度を表示する"""
-
-    st.header("5. 特徴量重要度")
-
-    fig2, ax = plt.subplots(figsize=(8, 5))
-
-    lgb.plot_importance(
-        st.session_state["model"],
-        max_num_features=10,
-        ax=ax
-    )
-
-    plt.tight_layout()
-
-    st.pyplot(fig2)
-
 
 # -----------------------
-# ログイン画面(関数)
+# ログイン状態による画面切り替え
 # -----------------------
+
 if st.session_state["user"] is None:
+
     show_login()
 
-# -----------------------
-# ログイン後画面
-# -----------------------
 else:
 
     user = st.session_state["user"]
 
+    # -----------------------
     # サイドバー
+    # -----------------------
+
     st.sidebar.header("ユーザー情報")
+
     role_names = {
-    "general": "一般ユーザー",
-    "store_manager": "店舗責任者",
-    "hq_manager": "本部責任者",
-    "admin": "システム管理者"
+        "general": "一般ユーザー",
+        "store_manager": "店舗責任者",
+        "hq_manager": "本部責任者",
+        "admin": "システム管理者"
     }
-    st.sidebar.write(f"氏名: {user.display_name}")
-    st.sidebar.write(f"権限: {role_names.get(user.role, user.role)}")
+
+    st.sidebar.write(
+        f"氏名: {user.display_name}"
+    )
+
+    st.sidebar.write(
+        f"権限: {role_names.get(user.role, user.role)}"
+    )
 
     if st.sidebar.button("ログアウト"):
+
         st.session_state["user"] = None
         st.rerun()
-
-    # メイン画面
-    st.title("📈 来局者予測システム")
-    st.write("CSVをアップロードして来局者数を予測します")
 
     # -----------------------
     # 店舗選択
     # -----------------------
+
     if user.role in ["hq_manager", "admin"]:
+
         stores = get_stores()
+
     else:
+
         stores = [
             store
             for store in get_stores()
             if store.id == user.store_id
         ]
 
-    st.header("店舗選択")
+    if not stores:
+
+        st.error(
+            "利用できる店舗がありません。"
+        )
+
+        st.stop()
 
     selected_store = st.selectbox(
         "店舗選択",
         stores,
         format_func=lambda x: x.store_name
     )
-    # -----------------------
-    # ファイルアップロード(関数)
-    # -----------------------
-    uploaded_file = show_csv_upload(user)
 
     # -----------------------
-    # 予測条件
+    # ダッシュボード表示
     # -----------------------
-    if user.role in ["hq_manager", "admin"]:
 
-        st.header("モデル管理")
-
-        if st.button("モデル学習"):
-
-            success = train_model_from_db(selected_store.id)
-
-            if success:
-                st.success("モデル学習が完了しました。")
-            else:
-                st.warning("学習できるデータがありません。")
-
-    st.header("2. 予測条件の設定")
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-        forecast_days = st.slider(
-            "予測日数",
-            7,
-            90,
-            30
-        )
-
-    with col2:
-        patient_type = st.radio(
-            "患者タイプ",
-            ["全体", "新患", "継続"]
-        )
-
-    # -----------------------
-    # 予測処理
-    # -----------------------
-    if uploaded_file:
-
-        df = pd.read_csv(uploaded_file)
-
-        st.subheader("CSVデータ確認")
-        st.dataframe(df.head())
-
-        if st.button("DBへ保存"):
-                
-            try:
-                saved_count = save_visit_data(
-                    df,
-                    selected_store.id
-                )
-                   
-                st.success(f"{saved_count}件保存しました")
-            
-            except ValueError as e:
-                st.error(str(e))
-        
-        # -----------------------
-        # DB確認(関数)
-        # -----------------------
-    show_db_data(user, selected_store)
-
-        # -----------------------
-        # DBから予測(関数)
-        # -----------------------
-
-    run_forecast(user, selected_store, forecast_days)
-
-        # -----------------------
-        # 製図以下
-        # -----------------------
-    if st.session_state["df_forecast"] is not None:
-            show_forecast_result(selected_store)
-
-        # -----------------------
-        #　推奨人数、実配置人数
-        # -----------------------  
-            show_staffing(selected_store)
-
-        # -----------------------
-        # 特徴量重要度
-        # -----------------------
-            show_feature_importance()
-
-#ユーザー管理
-    if user.role == "admin":
-        df_users = get_users()
-        st.dataframe(df_users)
-        stores = get_stores()
-        st.header("店舗管理")
-
-        store_name = st.text_input("店舗名")
-
-        if st.button("店舗追加"):
-            if not store_name:
-                st.error("店舗名を入力してください")
-            else:
-                result = add_store(store_name)
-
-                if result:
-                    st.success("店舗を追加しました")
-                    st.rerun()
-                else:
-                    st.warning("その店舗は既に存在します")
-
-
-    # ユーザー追加フォーム
-        username = st.text_input("ユーザー名")
-        display_name = st.text_input("表示名")
-        password = st.text_input(
-        "パスワード",
-        type="password"
-        )
-        role = st.selectbox(
-        "権限",
-        [
-            "general",
-            "store_manager",
-            "hq_manager",
-            "admin",
-        ],
-        )
-    
-        if role in ["general", "store_manager"]:
-            selected_store = st.selectbox(
-            "店舗",
-            stores,
-            format_func=lambda x: x.store_name
-    )
-            store_id = selected_store.id
-        else:
-            store_id = None
-
-        if st.button("ユーザー登録"):
-            try:
-                create_user(
-                username,
-                display_name,
-                password,
-                role,
-                store_id,
-            )
-                st.success("ユーザーを登録しました。")
-
-            except ValueError as e:
-                st.error(str(e))
-    
-    
+    show_dashboard(selected_store)
