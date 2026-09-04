@@ -3,17 +3,46 @@
 # -----------------------
 import streamlit as st
 import plotly.express as px
+from pathlib import Path
+from datetime import date
 
 from authentication import authenticate_user
-from db_service import get_stores, get_forecast_result,get_system_setting
-from staffing_service import get_staffing, get_staff_suggestion
+from db_service import (
+    get_stores,
+    get_forecast_result,
+    get_system_setting
+)
+from staffing_service import (
+    get_staffing,
+    get_staff_suggestion
+)
+
+
 # -----------------------
 # Streamlit設定
 # -----------------------
 st.set_page_config(
-    page_title="来局者予測システム",
-    layout="centered"
+    page_title="来局者予測・人員配置システム",
+    page_icon="🏥",
+    layout="wide"
 )
+
+# -----------------------
+# css設定
+# -----------------------
+
+def load_css():
+    css_path = Path(__file__).parent / "styles.css"
+
+    with open(css_path, encoding="utf-8") as f:
+        st.markdown(
+            f"<style>{f.read()}</style>",
+            unsafe_allow_html=True
+        )
+
+
+load_css()
+
 
 
 # -----------------------
@@ -23,6 +52,7 @@ st.set_page_config(
 if "user" not in st.session_state:
     st.session_state["user"] = None
 
+
 # -----------------------
 # ログイン画面
 # -----------------------
@@ -30,16 +60,45 @@ if "user" not in st.session_state:
 def show_login():
     """ログイン画面を表示する"""
 
-    st.title("🔐 ログイン")
+    st.markdown(
+        '<div class="login-title">来局者予測アプリ</div>',
+        unsafe_allow_html=True
+    )
 
-    username = st.text_input("ユーザー名")
+    st.markdown(
+        '<div class="login-description">'
+        '過去のデータから来局者を予測できます'
+        '</div>',
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        '<div class="login-form-title">ログイン</div>',
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        '<div class="login-label">ユーザー名</div>',
+        unsafe_allow_html=True
+    )
+
+    username = st.text_input(
+        "ユーザー名",
+        label_visibility="collapsed"
+    )
+
+    st.markdown(
+        '<div class="login-label">パスワード</div>',
+        unsafe_allow_html=True
+    )
 
     password = st.text_input(
         "パスワード",
-        type="password"
+        type="password",
+        label_visibility="collapsed"
     )
 
-    if st.button("ログイン"):
+    if st.button("ログイン", use_container_width=True):
 
         user = authenticate_user(
             username,
@@ -56,7 +115,6 @@ def show_login():
                 "ユーザー名またはパスワードが違います"
             )
 
-
 # -----------------------
 # ダッシュボード
 # -----------------------
@@ -64,11 +122,45 @@ def show_login():
 def show_dashboard(selected_store):
     """ダッシュボードを表示する"""
 
-    st.title("🏠 ダッシュボード")
+    # -----------------------
+    # ヘッダー
+    # -----------------------
 
-    st.caption(
-        f"{selected_store.store_name} の状況"
-    )
+     
+
+    title_col, store_col = st.columns([4, 1])
+
+    with title_col:
+
+        st.markdown(
+            '<div class="dashboard-title">ダッシュボード</div>',
+            unsafe_allow_html=True
+        )
+
+        st.markdown(
+            f'<div class="dashboard-subtitle">'
+            f'{selected_store.store_name} の状況'
+            f'</div>',
+            unsafe_allow_html=True
+        )
+
+    with store_col:
+
+        st.markdown(
+            '<div class="store-label">選択店舗</div>',
+            unsafe_allow_html=True
+        )
+
+        st.markdown(
+            f'<div class="store-name">'
+            f'{selected_store.store_name}'
+            f'</div>',
+            unsafe_allow_html=True
+        )
+
+    # -----------------------
+    # 予測データ取得
+    # -----------------------
 
     df_forecast = get_forecast_result(
         selected_store.id
@@ -78,7 +170,7 @@ def show_dashboard(selected_store):
 
         st.info(
             "まだ予測データがありません。"
-            "来局者予測画面から予測を実行してください。"
+            "「来局者予測」画面から予測を実行してください。"
         )
 
         return
@@ -89,13 +181,15 @@ def show_dashboard(selected_store):
 
     latest = df_forecast.iloc[0]
 
+    today = date.today().strftime("%Y年%m月%d日")
+
     predicted_visits = int(
         latest["predicted_visits"]
     )
 
     visits_per_pharmacist = get_system_setting(
-    "visits_per_pharmacist",
-    25
+        "visits_per_pharmacist",
+        25
     )
 
     recommended_staff = get_staff_suggestion(
@@ -140,76 +234,165 @@ def show_dashboard(selected_store):
     # -----------------------
     # KPI
     # -----------------------
+    st.subheader(f"今日の状況（{today}）")
 
     col1, col2, col3, col4 = st.columns(4)
 
     with col1:
 
-        st.metric(
-            "予測来局者数",
-            f"{predicted_visits}人"
+        st.markdown(
+            f"""
+            <div class="kpi-card">
+                <div class="kpi-title">予測来局者数</div>
+                <div class="kpi-value">
+                    {predicted_visits}
+                    <span class="kpi-unit">人</span>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True
         )
+
 
     with col2:
 
-        st.metric(
-            "推奨薬剤師数",
-            f"{recommended_staff}人"
+        st.markdown(
+            f"""
+            <div class="kpi-card">
+                <div class="kpi-title">推奨薬剤師数</div>
+                <div class="kpi-value">
+                    {recommended_staff}
+                    <span class="kpi-unit">人</span>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True
         )
+
 
     with col3:
 
-        st.metric(
-            "実配置人数",
-            f"{actual_staff}人"
+        st.markdown(
+            f"""
+            <div class="kpi-card">
+                <div class="kpi-title">実配置人数</div>
+                <div class="kpi-value">
+                    {actual_staff}
+                    <span class="kpi-unit">人</span>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True
         )
+
 
     with col4:
 
         if shortage > 0:
 
-            st.metric(
-                "人員状況",
-                f"{shortage}人不足"
+            status_text = f"{shortage}人不足"
+            status_class = "status-warning"
+
+        elif shortage < 0:
+
+            status_text = f"{abs(shortage)}人余力"
+            status_class = "status-normal"
+
+        else:
+
+            status_text = "適正"
+            status_class = "status-normal"
+
+
+        st.markdown(
+            f"""
+            <div class="kpi-card">
+                <div class="kpi-title">人員状況</div>
+                <div class="kpi-value {status_class}">
+                    {status_text}
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+   
+    # -----------------------
+    # 区切り
+    # -----------------------
+
+    st.divider()
+
+    # -----------------------
+    # グラフ
+    # -----------------------
+
+    graph_col, info_col = st.columns([2.5, 1])
+
+    with graph_col:
+
+        st.subheader("📈 今後の来局者数予測")
+
+        fig = px.line(
+            df_forecast,
+            x="date",
+            y="predicted_visits",
+            markers=True,
+            labels={
+                "date": "日付",
+                "predicted_visits": "予測来局者数"
+            }
+        )
+
+        fig.update_layout(
+            margin=dict(
+                l=20,
+                r=20,
+                t=20,
+                b=20
+            ),
+            height=400
+        )
+
+        st.plotly_chart(
+            fig,
+            use_container_width=True
+        )
+
+    # -----------------------
+    # 今日のコメント
+    # -----------------------
+
+    with info_col:
+
+        st.subheader("💡 今日の状況")
+
+        if shortage > 0:
+
+            st.warning(
+                f"推奨人数に対して "
+                f"{shortage}人不足しています。"
             )
 
         elif shortage < 0:
 
-            st.metric(
-                "人員状況",
-                f"{abs(shortage)}人余力"
+            st.success(
+                f"推奨人数に対して "
+                f"{abs(shortage)}人の余力があります。"
             )
 
         else:
 
-            st.metric(
-                "人員状況",
-                "適正"
+            st.success(
+                "推奨人数と実配置人数が一致しています。"
             )
 
-    # -----------------------
-    # 予測グラフ
-    # -----------------------
+        st.subheader("ℹ️ システム情報")
 
-    st.subheader(
-        "今後の来局者数予測"
-    )
-
-    fig = px.line(
-        df_forecast,
-        x="date",
-        y="predicted_visits",
-        markers=True,
-        labels={
-            "date": "日付",
-            "predicted_visits": "予測来局者数"
-        }
-    )
-
-    st.plotly_chart(
-        fig,
-        use_container_width=True
-    )
+        st.write(
+            f"薬剤師1人あたりの担当来局者数："
+            f"**{visits_per_pharmacist}人**"
+        )
 
 
 # -----------------------
@@ -217,6 +400,16 @@ def show_dashboard(selected_store):
 # -----------------------
 
 if st.session_state["user"] is None:
+    st.markdown(
+        """
+        <style>
+        [data-testid="stSidebar"] {
+            display: none;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
 
     show_login()
 
@@ -228,7 +421,11 @@ else:
     # サイドバー
     # -----------------------
 
-    st.sidebar.header("ユーザー情報")
+    st.sidebar.title(
+        "🏥 来局者予測・人員配置システム"
+    )
+
+    st.sidebar.divider()
 
     role_names = {
         "general": "一般ユーザー",
@@ -238,20 +435,23 @@ else:
     }
 
     st.sidebar.write(
-        f"氏名: {user.display_name}"
+        f"👤 **{user.display_name}**"
     )
 
-    st.sidebar.write(
-        f"権限: {role_names.get(user.role, user.role)}"
+    st.sidebar.caption(
+        role_names.get(user.role, user.role)
     )
 
-    if st.sidebar.button("ログアウト"):
+    if st.sidebar.button(
+        "ログアウト",
+        use_container_width=True
+    ):
 
         st.session_state["user"] = None
         st.rerun()
 
     # -----------------------
-    # 店舗選択
+    # 店舗取得
     # -----------------------
 
     if user.role in ["hq_manager", "admin"]:
@@ -274,10 +474,17 @@ else:
 
         st.stop()
 
-    selected_store = st.selectbox(
+    # -----------------------
+    # 店舗選択
+    # -----------------------
+
+    st.sidebar.subheader("店舗")
+
+    selected_store = st.sidebar.selectbox(
         "店舗選択",
         stores,
-        format_func=lambda x: x.store_name
+        format_func=lambda x: x.store_name,
+        label_visibility="collapsed"
     )
 
     # -----------------------

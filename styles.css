@@ -1,0 +1,224 @@
+/* 全体背景 */
+.stApp {
+    background-color: #f5f8fc;
+}
+
+/* メインコンテンツ */
+.block-container {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+}
+
+/* KPIカード */
+.kpi-card {
+    background-color: white;
+    border-radius: 12px;
+    padding: 18px 20px;
+    border: 1px solid #dce6f2;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    min-height: 120px;
+}
+
+.kpi-title {
+    font-size: 14px;
+    color: #64748b;
+    margin-bottom: 8px;
+}
+
+.kpi-value {
+    font-size: 30px;
+    font-weight: bold;
+    color: #173f73;
+}
+
+.kpi-unit {
+    font-size: 15px;
+    color: #64748b;
+    margin-left: 4px;
+}
+
+.status-normal {
+    color: #198754;
+}
+
+.status-warning {
+    color: #dc3545;
+}
+/* ダッシュボード */
+.dashboard-title {
+    color: #173f73;
+    font-size: 32px;
+    font-weight: 700;
+    margin-top: 30px;
+    margin-bottom: 2px;
+}
+
+.dashboard-subtitle {
+    color: #64748b;
+    font-size: 14px;
+}
+
+.store-label {
+    color: #64748b;
+    font-size: 13px;
+    margin-bottom: 4px;
+}
+
+.store-name {
+    color: #173f73;
+    font-size: 18px;
+    font-weight: 600;
+}
+/* 情報カード */
+.info-card {
+    background-color: white;
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid #dce6f2;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+/* サイドバー */
+[data-testid="stSidebar"] {
+    background-color: #173f73;
+}
+
+/* サイドバーの文字 */
+[data-testid="stSidebar"] h1,
+[data-testid="stSidebar"] h2,
+[data-testid="stSidebar"] h3,
+[data-testid="stSidebar"] p,
+[data-testid="stSidebar"] label {
+    color: #ffffff !important;
+}
+
+/* サイドバーのナビゲーション */
+[data-testid="stSidebarNav"] span {
+    color: #ffffff !important;
+}
+
+/* ログイン画面 */
+/* =========================
+   ログイン画面
+   ========================= */
+.login-title {
+    margin-top: 40px;
+}
+.login-title {
+    color: #173f73 !important;
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.login-description {
+    color: #64748b !important;
+    font-size: 14px;
+    margin-bottom: 28px;
+}
+
+.login-form-title {
+    color: #334155 !important;
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 18px;
+}
+
+.login-label {
+    color: #334155 !important;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+/* 入力欄 */
+[data-testid="stTextInput"] input {
+    background-color: #eef4f9;
+    border: 1px solid #cbd9e6;
+    color: #334155;
+}
+
+/* ログインボタン */
+.stButton > button {
+    background-color: #dceaf5;
+    color: #173f73;
+    border: 1px solid #c5d8e8;
+    border-radius: 8px;
+}
+
+.stButton > button:hover {
+    background-color: #cddfed;
+    color: #173f73;
+}
+
+/* サイドバーのログアウトボタン */
+[data-testid="stSidebar"] .stButton > button {
+    background-color: #c5dbea !important;
+    color: #173f73 !important;
+    border: 1px solid #b4ccdf !important;
+    border-radius: 8px !important;
+}
+
+[data-testid="stSidebar"] .stButton button span {
+    color: #173f73 !important;
+}
+
+[data-testid="stSidebar"] .stButton > button:hover {
+    background-color: #b6d1e4 !important;
+    color: #173f73 !important;
+    border-color: #a5c3d8 !important;
+}
+/* =========================
+   メイン画面の文字色
+   ========================= */
+
+[data-testid="stAppViewContainer"] {
+    color: #334155;
+}
+
+[data-testid="stAppViewContainer"] h1,
+[data-testid="stAppViewContainer"] h2,
+[data-testid="stAppViewContainer"] h3,
+[data-testid="stAppViewContainer"] p,
+[data-testid="stAppViewContainer"] label {
+    color: #334155;
+}
+
+/* Streamlit上部ヘッダーを非表示 */
+[data-testid="stHeader"] {
+    display: none;
+}
+
+/* =========================
+   来局者予測ページ
+   ========================= */
+
+.forecast-title {
+    color: #173f73 !important;
+    font-size: 32px;
+    font-weight: 700;
+    margin-top: 30px;
+    margin-bottom: 4px;
+}
+
+.forecast-subtitle {
+    color: #64748b !important;
+    font-size: 14px;
+    margin-bottom: 24px;
+}
+
+.forecast-card {
+    background-color: white;
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid #dce6f2;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    margin-bottom: 20px;
+}
+
+.forecast-card-title {
+    color: #173f73 !important;
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 12px;
+}

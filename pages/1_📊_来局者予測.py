@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+from pathlib import Path
 
 from db_service import (
     get_stores,
@@ -9,6 +10,18 @@ from db_service import (
     get_forecast_result
 )
 from forecast_service import forecast_from_db
+
+def load_css():
+    css_path = Path(__file__).parent.parent / "styles.css"
+
+    with open(css_path, encoding="utf-8") as f:
+        st.markdown(
+            f"<style>{f.read()}</style>",
+            unsafe_allow_html=True
+        )
+
+
+load_css()
 
 user = st.session_state.get("user")
 
@@ -25,7 +38,17 @@ if user is None:
     st.warning("ログインしてください。")
     st.stop()
 
-st.title("📊 来局者予測")
+st.markdown(
+    '<div class="forecast-title">📊 来局者予測</div>',
+    unsafe_allow_html=True
+)
+
+st.markdown(
+    '<div class="forecast-subtitle">'
+    '過去の来局データをもとに、今後の来局者数を予測します'
+    '</div>',
+    unsafe_allow_html=True
+)
 
 if user.role in ["hq_manager", "admin"]:
     stores = get_stores()
