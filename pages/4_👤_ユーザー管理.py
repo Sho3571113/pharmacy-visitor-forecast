@@ -1,6 +1,5 @@
 import streamlit as st
-
-from db_service import get_users, get_stores, create_user
+from db_service import search_users, get_stores, create_user
 
 
 user = st.session_state.get("user")
@@ -19,22 +18,67 @@ if user.role != "admin":
     st.stop()
 
 
-st.title("👤 ユーザー管理")
-
-
 # -----------------------
 # ユーザー一覧
 # -----------------------
 
 st.subheader("ユーザー一覧")
 
-df_users = get_users()
-
-st.dataframe(
-    df_users,
-    use_container_width=True
+keyword = st.text_input(
+    "ユーザー名で検索",
+    placeholder="ユーザー名を入力"
 )
 
+if keyword:
+
+    df_users = search_users(keyword)
+
+    stores = get_stores()
+
+    store_names = {
+        store.id: store.store_name
+        for store in stores
+    }
+
+    df_users["store_name"] = df_users["store_id"].map(
+        store_names
+    )
+
+    df_users = df_users[
+        [
+            "id",
+            "username",
+            "role",
+            "store_name"
+        ]
+    ].rename(
+        columns={
+            "id": "ユーザーID",
+            "username": "ユーザー名",
+            "role": "権限",
+            "store_name": "店舗名"
+        }
+    )
+
+    df_users["権限"] = df_users["権限"].replace(
+        {
+            "general": "一般ユーザー",
+            "store_manager": "店舗責任者",
+            "hq_manager": "本部責任者",
+            "admin": "システム管理者"
+        }
+    )
+
+    st.markdown(
+        df_users.to_html(
+            index=False,
+            classes="forecast-result-table"
+        ),
+        unsafe_allow_html=True
+    )
+
+else:
+    st.info("ユーザー名を入力して検索してください。")
 
 # -----------------------
 # ユーザー追加
@@ -44,7 +88,6 @@ st.subheader("ユーザー追加")
 
 username = st.text_input("ユーザー名")
 
-display_name = st.text_input("表示名")
 
 password = st.text_input(
     "パスワード",
@@ -90,12 +133,11 @@ if st.button("ユーザー登録"):
 
         create_user(
             username,
-            display_name,
+            username,
             password,
             role,
             store_id,
         )
-
         st.success("ユーザーを登録しました。")
 
     except ValueError as e:

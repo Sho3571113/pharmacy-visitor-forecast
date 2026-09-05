@@ -12,6 +12,28 @@ def get_stores():
     session.close()
     return stores
 
+def search_stores(keyword=""):
+    session = Session()
+
+    try:
+        query = session.query(Store)
+
+        if keyword:
+            query = query.filter(
+                Store.store_name.contains(keyword)
+            )
+
+        rows = (
+            query
+            .order_by(Store.id)
+            .all()
+        )
+
+        return rows
+
+    finally:
+        session.close()
+
 def get_users():
     session = Session()
 
@@ -32,6 +54,41 @@ def get_users():
     ])
 
     return df
+
+def search_users(keyword="", limit=50):
+    session = Session()
+
+    try:
+        query = session.query(User)
+
+        if keyword:
+            query = query.filter(
+                User.username.contains(keyword)
+            )
+
+        rows = (
+            query
+            .order_by(User.id)
+            .limit(limit)
+            .all()
+        )
+
+        df = pd.DataFrame([
+            {
+                "id": row.id,
+                "username": row.username,
+                "display_name": row.display_name,
+                "role": row.role,
+                "store_id": row.store_id,
+                "created_at": row.created_at,
+            }
+            for row in rows
+        ])
+
+        return df
+
+    finally:
+        session.close()
 
 def create_user(
     username,

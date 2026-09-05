@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 
 from db_service import (
-    get_stores,
     get_system_setting
 )
 
@@ -19,30 +18,7 @@ if user is None:
     st.warning("ログインしてください。")
     st.stop()
 
-
-st.title("👥 人員配置")
-
-
-# -----------------------
-# 店舗選択
-# -----------------------
-
-if user.role in ["hq_manager", "admin"]:
-    stores = get_stores()
-else:
-    stores = [
-        store
-        for store in get_stores()
-        if store.id == user.store_id
-    ]
-
-selected_store = st.selectbox(
-    "店舗選択",
-    stores,
-    format_func=lambda x: x.store_name
-)
-
-
+selected_store = st.session_state["selected_store"]
 # -----------------------
 # 推奨薬剤師人数
 # -----------------------
@@ -163,10 +139,6 @@ else:
             "predicted_visits": "予測来局者数"
         }
     )
-
-    # -----------------------
-    # 実配置人数を編集
-    # -----------------------
 
     edited_df = st.data_editor(
         df_display,

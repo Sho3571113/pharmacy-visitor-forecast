@@ -1,6 +1,6 @@
 import streamlit as st
-
-from db_service import get_stores, add_store
+import pandas as pd
+from db_service import search_stores, add_store
 
 
 user = st.session_state.get("user")
@@ -19,7 +19,7 @@ if user.role != "admin":
     st.stop()
 
 
-st.title("🏪 店舗管理")
+
 
 
 # -----------------------
@@ -28,13 +28,38 @@ st.title("🏪 店舗管理")
 
 st.subheader("店舗一覧")
 
-stores = get_stores()
+keyword = st.text_input(
+    "店舗名で検索",
+    placeholder="店舗名を入力"
+)
 
-for store in stores:
-    st.write(
-        f"店舗ID: {store.id}　店舗名: {store.store_name}"
-    )
+if keyword:
 
+    stores = search_stores(keyword)
+
+    if stores:
+
+        df_stores = pd.DataFrame([
+            {
+                "店舗ID": store.id,
+                "店舗名": store.store_name
+            }
+            for store in stores
+        ])
+
+        st.markdown(
+            df_stores.to_html(
+            index=False,
+            classes="forecast-result-table"
+            ),
+        unsafe_allow_html=True
+        )
+
+    else:
+        st.info("該当する店舗がありません。")
+
+else:
+    st.info("店舗名を入力して検索してください。")
 
 # -----------------------
 # 店舗追加

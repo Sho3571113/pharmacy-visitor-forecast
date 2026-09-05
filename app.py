@@ -116,48 +116,65 @@ def show_login():
             )
 
 # -----------------------
-# ダッシュボード
+# 共通ヘッダー
 # -----------------------
 
-def show_dashboard(selected_store):
-    """ダッシュボードを表示する"""
+def show_header(page_title, stores, user):
+    """共通ヘッダーを表示する"""
 
-    # -----------------------
-    # ヘッダー
-    # -----------------------
-
-     
-
-    title_col, store_col = st.columns([4, 1])
+    title_col, store_col, user_col = st.columns(
+        [5, 2, 2]
+    )
 
     with title_col:
 
         st.markdown(
-            '<div class="dashboard-title">ダッシュボード</div>',
-            unsafe_allow_html=True
-        )
-
-        st.markdown(
-            f'<div class="dashboard-subtitle">'
-            f'{selected_store.store_name} の状況'
-            f'</div>',
+            f"""
+            <div class="header-page-title">
+                 {page_title}
+            </div>
+            """,
             unsafe_allow_html=True
         )
 
     with store_col:
 
+        selected_store = st.selectbox(
+            "選択店舗",
+            stores,
+            format_func=lambda x: x.store_name,
+            key="selected_store",
+            label_visibility="collapsed"
+        )
+
+    with user_col:
+
+        role_names = {
+            "general": "一般ユーザー",
+            "store_manager": "店舗責任者",
+            "hq_manager": "本部責任者",
+            "admin": "システム管理者"
+        }
+
         st.markdown(
-            '<div class="store-label">選択店舗</div>',
+            f"""
+            <div class="header-user">
+                👤 {user.display_name}<br>
+                <span>{role_names.get(user.role, user.role)}</span>
+            </div>
+            """,
             unsafe_allow_html=True
         )
 
-        st.markdown(
-            f'<div class="store-name">'
-            f'{selected_store.store_name}'
-            f'</div>',
-            unsafe_allow_html=True
-        )
+    return selected_store
 
+# -----------------------
+# ダッシュボード
+# -----------------------
+
+def show_dashboard(selected_store):
+    """ダッシュボードを表示する"""
+ 
     # -----------------------
     # 予測データ取得
     # -----------------------
@@ -341,24 +358,34 @@ def show_dashboard(selected_store):
             labels={
                 "date": "日付",
                 "predicted_visits": "予測来局者数"
-            }
-        )
+            },
+            template="plotly_white"
+    )
 
         fig.update_layout(
-            margin=dict(
-                l=20,
-                r=20,
-                t=20,
-                b=20
+            plot_bgcolor="white",
+            paper_bgcolor="white",
+            font=dict(
+                color="#334155"
             ),
-            height=400
+            xaxis=dict(
+                gridcolor="#e2e8f0",
+                linecolor="#cbd5e1",
+                tickfont=dict(color="#334155"),
+                title_font=dict(color="#334155")
+            ),
+            yaxis=dict(
+                gridcolor="#e2e8f0",
+                linecolor="#cbd5e1",
+                tickfont=dict(color="#334155"),
+                title_font=dict(color="#334155")
+            )
         )
 
         st.plotly_chart(
             fig,
             use_container_width=True
         )
-
     # -----------------------
     # 今日のコメント
     # -----------------------
@@ -396,10 +423,44 @@ def show_dashboard(selected_store):
 
 
 # -----------------------
-# ログイン状態による画面切り替え
+# ページ定義
+# -----------------------
+
+def show_dashboard_page():
+    """ダッシュボードページを表示する"""
+
+    user = st.session_state["user"]
+
+    if user.role in ["hq_manager", "admin"]:
+        stores = get_stores()
+    else:
+        stores = [
+            store
+            for store in get_stores()
+            if store.id == user.store_id
+        ]
+
+    if not stores:
+        st.error("利用できる店舗がありません。")
+        st.stop()
+
+    selected_store = st.session_state.get(
+        "selected_store"
+    )
+
+    if selected_store is None:
+        selected_store = stores[0]
+        st.session_state["selected_store"] = selected_store
+
+    show_dashboard(selected_store)
+
+
+# -----------------------
+# ログイン状態
 # -----------------------
 
 if st.session_state["user"] is None:
+
     st.markdown(
         """
         <style>
@@ -418,40 +479,7 @@ else:
     user = st.session_state["user"]
 
     # -----------------------
-    # サイドバー
-    # -----------------------
-
-    st.sidebar.title(
-        "🏥 来局者予測・人員配置システム"
-    )
-
-    st.sidebar.divider()
-
-    role_names = {
-        "general": "一般ユーザー",
-        "store_manager": "店舗責任者",
-        "hq_manager": "本部責任者",
-        "admin": "システム管理者"
-    }
-
-    st.sidebar.write(
-        f"👤 **{user.display_name}**"
-    )
-
-    st.sidebar.caption(
-        role_names.get(user.role, user.role)
-    )
-
-    if st.sidebar.button(
-        "ログアウト",
-        use_container_width=True
-    ):
-
-        st.session_state["user"] = None
-        st.rerun()
-
-    # -----------------------
-    # 店舗取得
+    # 利用可能な店舗
     # -----------------------
 
     if user.role in ["hq_manager", "admin"]:
@@ -467,28 +495,196 @@ else:
         ]
 
     if not stores:
-
-        st.error(
-            "利用できる店舗がありません。"
-        )
-
+        st.error("利用できる店舗がありません。")
         st.stop()
 
     # -----------------------
-    # 店舗選択
+    # ページ定義
     # -----------------------
 
-    st.sidebar.subheader("店舗")
+    dashboard_page = st.Page(
+        show_dashboard_page,
+        title="ダッシュボード",
+        icon="🏠"
+    )
 
-    selected_store = st.sidebar.selectbox(
-        "店舗選択",
-        stores,
-        format_func=lambda x: x.store_name,
-        label_visibility="collapsed"
+    forecast_page = st.Page(
+        "pages/1_📊_来局者予測.py",
+        title="来局者予測",
+        icon="📊"
+    )
+
+    staffing_page = st.Page(
+        "pages/2_👥_人員配置.py",
+        title="人員配置",
+        icon="👥"
+    )
+
+    store_page = st.Page(
+        "pages/3_🏪_店舗管理.py",
+        title="店舗管理",
+        icon="🏪"
+    )
+
+    user_page = st.Page(
+        "pages/4_👤_ユーザー管理.py",
+        title="ユーザー管理",
+        icon="👤"
+    )
+
+    model_page = st.Page(
+        "pages/5_⚙️_モデル管理.py",
+        title="モデル管理",
+        icon="⚙️"
     )
 
     # -----------------------
-    # ダッシュボード表示
+    # 権限ごとのページ
     # -----------------------
 
-    show_dashboard(selected_store)
+    if user.role == "general":
+
+        pages = [
+            dashboard_page,
+            forecast_page,
+            staffing_page
+        ]
+
+    elif user.role == "store_manager":
+
+        pages = [
+            dashboard_page,
+            forecast_page,
+            staffing_page
+        ]
+
+    elif user.role == "hq_manager":
+
+        pages = [
+            dashboard_page,
+            forecast_page,
+            staffing_page,
+            model_page
+        ]
+
+    else:
+
+        pages = [
+            dashboard_page,
+            forecast_page,
+            staffing_page,
+            store_page,
+            user_page,
+            model_page
+        ]
+
+    # -----------------------
+    # ナビゲーション
+    # -----------------------
+
+    pg = st.navigation(
+        pages,
+        position="hidden"
+    )
+    # -----------------------
+    # 共通ヘッダー
+    # -----------------------
+
+    page_numbers = {
+    "ダッシュボード": "①",
+    "来局者予測": "②",
+    "人員配置": "③",
+    "店舗管理": "④",
+    "ユーザー管理": "⑤",
+    "モデル管理": "⑥"
+    }
+
+    selected_store = show_header(
+        f'{page_numbers.get(pg.title, "")} {pg.title}',
+        stores,
+        user
+    )
+    # -----------------------
+    # ナビゲーション
+    # -----------------------
+
+    pg = st.navigation(
+        pages,
+        position="hidden"
+    )
+
+    # -----------------------
+    # サイドバー
+    # -----------------------
+
+    st.sidebar.title(
+        "🏥 来局者予測・人員配置システム"
+    )
+
+    st.sidebar.divider()
+
+    st.sidebar.page_link(
+        dashboard_page,
+        label="ダッシュボード",
+        icon="🏠"
+    )
+
+    st.sidebar.page_link(
+        forecast_page,
+        label="来局者予測",
+        icon="📊"
+    )
+
+    st.sidebar.page_link(
+        staffing_page,
+        label="人員配置",
+        icon="👥"
+    )
+
+    if user.role == "admin":
+
+        st.sidebar.page_link(
+            store_page,
+            label="店舗管理",
+            icon="🏪"
+        )
+
+        st.sidebar.page_link(
+            user_page,
+            label="ユーザー管理",
+            icon="👤"
+        )
+
+    if user.role in ["hq_manager", "admin"]:
+
+        st.sidebar.page_link(
+            model_page,
+            label="モデル管理",
+            icon="⚙️"
+        )
+
+    st.sidebar.divider()
+
+    # -----------------------
+    # ログアウト
+    # -----------------------
+
+    if st.sidebar.button(
+        "ログアウト",
+        use_container_width=True
+    ):
+
+        st.session_state["user"] = None
+
+        st.session_state.pop(
+            "selected_store",
+            None
+        )
+
+        st.rerun()
+
+    # -----------------------
+    # ページ表示
+    # -----------------------
+
+    pg.run()

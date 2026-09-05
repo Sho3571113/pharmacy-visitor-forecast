@@ -1,7 +1,6 @@
 import streamlit as st
 
 from db_service import (
-    get_stores,
     get_system_setting,
     save_system_setting
 )
@@ -24,23 +23,7 @@ if user.role not in ["hq_manager", "admin"]:
     st.error("このページを利用する権限がありません。")
     st.stop()
 
-
-st.title("⚙️ モデル管理")
-
-
-# -----------------------
-# 店舗選択
-# -----------------------
-
-st.subheader("店舗選択")
-
-stores = get_stores()
-
-selected_store = st.selectbox(
-    "店舗",
-    stores,
-    format_func=lambda x: x.store_name
-)
+selected_store = st.session_state["selected_store"]
 
 # -----------------------
 # 人数設定

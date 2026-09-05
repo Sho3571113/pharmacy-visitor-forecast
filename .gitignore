@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# 仮想環境
+env/
+venv/
+
+# VS Code
+.vscode/
+
+# macOS
+.DS_Store
+
+#DB
+pharmacy.db
+

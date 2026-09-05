@@ -4,9 +4,8 @@ import plotly.express as px
 from pathlib import Path
 
 from db_service import (
-    get_stores,
     save_visit_data,
-    get_visit_data,
+    # get_visit_data,
     get_forecast_result
 )
 from forecast_service import forecast_from_db
@@ -28,8 +27,8 @@ user = st.session_state.get("user")
 if "df_forecast" not in st.session_state:
     st.session_state["df_forecast"] = None
 
-if "db_data" not in st.session_state:
-    st.session_state["db_data"] = None
+#if "db_data" not in st.session_state:
+#    st.session_state["db_data"] = None
 
 if "model" not in st.session_state:
     st.session_state["model"] = None
@@ -38,41 +37,44 @@ if user is None:
     st.warning("ログインしてください。")
     st.stop()
 
-st.markdown(
-    '<div class="forecast-title">📊 来局者予測</div>',
-    unsafe_allow_html=True
-)
+selected_store = st.session_state["selected_store"]
 
-st.markdown(
-    '<div class="forecast-subtitle">'
-    '過去の来局データをもとに、今後の来局者数を予測します'
-    '</div>',
-    unsafe_allow_html=True
-)
+with st.container(key="forecast-control"):
 
-if user.role in ["hq_manager", "admin"]:
-    stores = get_stores()
-else:
-    stores = [
-        store
-        for store in get_stores()
-        if store.id == user.store_id
-    ]
 
-selected_store = st.selectbox(
-    "店舗選択",
-    stores,
-    format_func=lambda x: x.store_name
-)
+    col1, col2, col3 = st.columns([2, 2, 1])
+
+    with col1:
+        forecast_days = st.selectbox(
+            "予測期間",
+            [7, 14, 30, 60, 90],
+            index=2,
+            format_func=lambda x: f"{x}日間"
+        )
+
+    with col2:
+        st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
+
+        predict_button = st.button(
+            "予測を実行",
+            use_container_width=True
+        )
 
 if user.role in ["store_manager", "hq_manager", "admin"]:
 
-    st.subheader("来局データのアップロード")
+    with st.container(key="upload-card"):
 
-    uploaded_file = st.file_uploader(
-        "CSVファイルを選択（列名: date, visits）",
-        type="csv"
-    )
+        st.markdown(
+            '<div class="forecast-section-title">'
+            '来局データのアップロード'
+            '</div>',
+            unsafe_allow_html=True
+        )
+
+        uploaded_file = st.file_uploader(
+            "CSVファイルを選択（列名: date, visits）",
+            type="csv"
+        )
 
 else:
     uploaded_file = None
@@ -82,60 +84,55 @@ if uploaded_file:
 
     df = pd.read_csv(uploaded_file)
 
-    st.subheader("CSVデータ確認")
-    st.dataframe(df.head())
+    with st.container(key="csv-preview-card"):
 
-    if st.button("DBへ保存"):
-
-        try:
-            saved_count = save_visit_data(
-                df,
-                selected_store.id
-            )
-
-            st.success(f"{saved_count}件保存しました")
-
-        except ValueError as e:
-            st.error(str(e))
-
-if user.role in ["store_manager", "hq_manager", "admin"]:
-
-    st.subheader("DBデータ確認")
-
-    if st.button("DBデータ確認"):
-
-        st.session_state["db_data"] = get_visit_data(
-            selected_store.id
+        st.markdown(
+            '<div class="forecast-section-title">'
+            'CSVデータ確認'
+            '</div>',
+            unsafe_allow_html=True
         )
-
-    if st.session_state.get("db_data") is not None:
 
         st.dataframe(
-            st.session_state["db_data"],
-            use_container_width=True
+            df.head(10),
+            use_container_width=True,
+            hide_index=True
         )
 
-st.subheader("予測条件")
+        if st.button("DBへ保存"):
 
-col1, col2 = st.columns(2)
+            try:
+                saved_count = save_visit_data(
+                    df,
+                    selected_store.id
+                )
 
-with col1:
-    forecast_days = st.slider(
-        "予測日数",
-        7,
-        90,
-        30
-    )
+                st.success(f"{saved_count}件保存しました")
 
-with col2:
-    patient_type = st.radio(
-        "患者タイプ",
-        ["全体", "新患", "継続"]
-    )
+            except ValueError as e:
+                st.error(str(e))
+
+#if user.role in ["store_manager", "hq_manager", "admin"]:
+#
+#    st.subheader("DBデータ確認")
+#
+#    if st.button("DBデータ確認"):
+#
+#       st.session_state["db_data"] = get_visit_data(
+#            selected_store.id
+#       )
+#
+#   if st.session_state.get("db_data") is not None:
+#
+#       st.dataframe(
+#          st.session_state["db_data"],
+#          use_container_width=True
+#       )
+
 
 if user.role in ["hq_manager", "admin"]:
 
-    if st.button("DBから予測"):
+    if predict_button:
 
         df_forecast, model = forecast_from_db(
             selected_store.id,
@@ -155,9 +152,9 @@ if user.role in ["hq_manager", "admin"]:
 
 if st.session_state["df_forecast"] is not None:
 
-    st.subheader("予測結果")
+    df_forecast = st.session_state["df_forecast"]
 
-    df_display = st.session_state["df_forecast"].head(10).copy()
+    df_display = df_forecast.head(10).copy()
 
     df_display["date"] = pd.to_datetime(
         df_display["date"]
@@ -170,27 +167,72 @@ if st.session_state["df_forecast"] is not None:
         }
     )
 
-    st.dataframe(
-        df_display,
-        use_container_width=True
+    st.markdown(
+        '<div class="forecast-section-title">予測結果</div>',
+        unsafe_allow_html=True
     )
 
-    st.subheader("来局者数予測")
+    col1, col2 = st.columns([2, 1])
 
-    df_forecast = st.session_state["df_forecast"]
+    with col1:
 
-    fig = px.line(
-        df_forecast,
-        x="date",
-        y="predicted_visits",
-        markers=True,
-        labels={
-            "date": "日付",
-            "predicted_visits": "予測来局者数"
-        }
+        st.markdown(
+            '<div class="forecast-card-title">'
+            '来局者数予測グラフ'
+            '</div>',
+            unsafe_allow_html=True
+        )
+
+        fig = px.line(
+            df_forecast,
+            x="date",
+            y="predicted_visits",
+            markers=True,
+            labels={
+                "date": "日付",
+                "predicted_visits": "予測来局者数"
+            },
+            template="plotly_white"
+        )
+
+        fig.update_layout(
+    plot_bgcolor="white",
+    paper_bgcolor="white",
+    font=dict(
+        color="#334155"
+    ),
+    xaxis=dict(
+        gridcolor="#e2e8f0",
+        linecolor="#cbd5e1",
+        tickfont=dict(color="#334155"),
+        title_font=dict(color="#334155")
+    ),
+    yaxis=dict(
+        gridcolor="#e2e8f0",
+        linecolor="#cbd5e1",
+        tickfont=dict(color="#334155"),
+        title_font=dict(color="#334155")
     )
+)
 
-    st.plotly_chart(
-        fig,
-        use_container_width=True
-    )
+        st.plotly_chart(
+            fig,
+            use_container_width=True
+        )
+
+    with col2:
+
+        st.markdown(
+            '<div class="forecast-card-title">'
+            '予測結果一覧'
+            '</div>',
+            unsafe_allow_html=True
+        )
+
+        st.markdown(
+            df_display.to_html(
+                index=False,
+                classes="forecast-result-table"
+            ),
+            unsafe_allow_html=True
+        )

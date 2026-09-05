@@ -78,12 +78,15 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-/* サイドバー */
+/* =======================
+   Sidebar
+======================= */
+
 [data-testid="stSidebar"] {
     background-color: #173f73;
 }
 
-/* サイドバーの文字 */
+/* システム名 */
 [data-testid="stSidebar"] h1,
 [data-testid="stSidebar"] h2,
 [data-testid="stSidebar"] h3,
@@ -92,9 +95,32 @@
     color: #ffffff !important;
 }
 
-/* サイドバーのナビゲーション */
+/* ページナビゲーション */
+[data-testid="stSidebarNav"] {
+    padding-top: 1rem;
+}
+
+/* ページ名 */
 [data-testid="stSidebarNav"] span {
     color: #ffffff !important;
+    font-size: 15px;
+}
+
+/* ナビゲーション項目 */
+[data-testid="stSidebarNav"] li {
+    margin-bottom: 6px;
+}
+
+/* 現在選択しているページ */
+[data-testid="stSidebarNav"] li[aria-current="page"] {
+    background-color: #2563a8;
+    border-radius: 8px;
+}
+
+/* 選択ページの文字 */
+[data-testid="stSidebarNav"] li[aria-current="page"] span {
+    color: #ffffff !important;
+    font-weight: 600;
 }
 
 /* ログイン画面 */
@@ -221,4 +247,118 @@
     font-size: 18px;
     font-weight: 600;
     margin-bottom: 12px;
+}
+
+/* =========================
+   予測結果一覧
+   ========================= */
+
+.forecast-result-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    background-color: #ffffff !important;
+    border: 1px solid #dce6f2 !important;
+    border-radius: 12px !important;
+    overflow: hidden !important;
+    color: #334155 !important;
+    font-size: 14px !important;
+}
+
+.forecast-result-table th {
+    background-color: #f1f5f9 !important;
+    color: #334155 !important;
+    font-weight: 600 !important;
+    padding: 10px 12px !important;
+    text-align: left !important;
+    border-bottom: 1px solid #dce6f2 !important;
+    line-height: 1.4 !important;
+}
+
+.forecast-result-table td {
+    background-color: #ffffff !important;
+    color: #334155 !important;
+    padding: 8px 12px !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    line-height: 1.4 !important;
+    height: auto !important;
+}
+
+.forecast-result-table tr:last-child td {
+    border-bottom: none !important;
+}
+
+/* =========================
+   CSVデータ確認カード
+   ========================= */
+
+div[class*="st-key-csv-preview-card"] {
+    background-color: #ffffff !important;
+    border: 1px solid #dce6f2 !important;
+    border-radius: 12px !important;
+    padding: 20px !important;
+    margin-bottom: 24px !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
+}
+/* 店舗・予測期間の選択欄 */
+[data-baseweb="select"] > div {
+    background-color: #ffffff !important;
+    color: #334155 !important;
+    border-color: #cbd5e1 !important;
+}
+
+/* 選択欄の文字 */
+[data-baseweb="select"] div {
+    color: #334155 !important;
+}
+
+/* ファイルアップロード */
+[data-testid="stFileUploaderDropzone"] {
+    background-color: #ffffff !important;
+    border: 1px dashed #cbd5e1 !important;
+}
+
+/* ファイルアップロード内の文字 */
+[data-testid="stFileUploaderDropzone"] * {
+    color: #334155 !important;
+}
+/* Browse files ボタン */
+[data-testid="stFileUploaderDropzone"] button {
+    background-color: #dceaf5 !important;
+    color: #173f73 !important;
+    border: 1px solid #c5d8e8 !important;
+    border-radius: 8px !important;
+}
+
+[data-testid="stFileUploaderDropzone"] button span {
+    color: #173f73 !important;
+}
+
+[data-testid="stFileUploaderDropzone"] button:hover {
+    background-color: #cddfed !important;
+    color: #173f73 !important;
+}
+
+/* =======================
+   Common Header
+======================= */
+
+.header-page-title {
+    color: #173f73;
+    font-size: 26px;
+    font-weight: 700;
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+
+.header-user {
+    color: #334155;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: right;
+    padding-top: 6px;
+}
+
+.header-user span {
+    color: #64748b;
+    font-size: 12px;
 }
