@@ -210,10 +210,6 @@
     color: #334155;
 }
 
-/* Streamlit上部ヘッダーを非表示 */
-[data-testid="stHeader"] {
-    display: none;
-}
 
 /* =========================
    来局者予測ページ
@@ -361,4 +357,13 @@ div[class*="st-key-csv-preview-card"] {
 .header-user span {
     color: #64748b;
     font-size: 12px;
+}
+
+/* 共通ヘッダー：店舗選択とユーザー情報を少し下げる */
+[data-testid="stSelectbox"] {
+    margin-top: 15px;
+}
+
+.header-user {
+    padding-top: 21px;
 }

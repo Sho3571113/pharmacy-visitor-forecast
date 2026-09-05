@@ -123,7 +123,7 @@ def show_header(page_title, stores, user):
     """共通ヘッダーを表示する"""
 
     title_col, store_col, user_col = st.columns(
-        [5, 2, 2]
+        [4, 3, 2]
     )
 
     with title_col:
@@ -603,14 +603,6 @@ else:
         f'{page_numbers.get(pg.title, "")} {pg.title}',
         stores,
         user
-    )
-    # -----------------------
-    # ナビゲーション
-    # -----------------------
-
-    pg = st.navigation(
-        pages,
-        position="hidden"
     )
 
     # -----------------------
