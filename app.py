@@ -2,6 +2,7 @@
 # 📦 インポート
 # -----------------------
 import streamlit as st
+import pandas as pd
 import plotly.express as px
 from pathlib import Path
 from datetime import date
@@ -196,9 +197,23 @@ def show_dashboard(selected_store):
     # 最新の予測データ
     # -----------------------
 
-    latest = df_forecast.iloc[0]
+    today_date = date.today()
 
-    today = date.today().strftime("%Y年%m月%d日")
+    df_forecast["date"] = pd.to_datetime(
+        df_forecast["date"]
+    ).dt.date
+
+    today_data = df_forecast[
+        df_forecast["date"] == today_date
+    ]
+
+    if today_data.empty:
+        st.info("本日の予測はありません。")
+        return
+
+    latest = today_data.iloc[0]
+
+    today = today_date.strftime("%Y年%m月%d日")
 
     predicted_visits = int(
         latest["predicted_visits"]
