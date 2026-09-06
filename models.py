@@ -1,5 +1,5 @@
 from sqlalchemy.orm import declarative_base
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Date, Float
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Date, Float, Boolean
 from datetime import datetime
 
 
@@ -22,6 +22,8 @@ class User(Base):
     hashed_password = Column(String, nullable=False)
 
     role = Column(String, default="general")
+
+    is_active = Column(Boolean, default=True, nullable=False)
 
     store_id = Column(Integer, ForeignKey("stores.id"))
 

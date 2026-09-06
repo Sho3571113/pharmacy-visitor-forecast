@@ -11,9 +11,13 @@ def authenticate_user(username, password):
     try:
         user = session.query(User).filter_by(username=username).first()
 
-        if user and bcrypt.checkpw(
-            password.encode(),
-            user.hashed_password.encode()
+        if (
+            user
+            and user.is_active
+            and bcrypt.checkpw(
+                password.encode(),
+                user.hashed_password.encode()
+            )
         ):
             return user
 

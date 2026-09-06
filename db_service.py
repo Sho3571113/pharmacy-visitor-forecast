@@ -1,6 +1,7 @@
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy import or_
 from db_config import engine
-from models import Store, VisitData, User, ForecastResult, SystemSetting
+from models import Store, VisitData, User, ForecastResult, Staffing, SystemSetting
 import pandas as pd
 import bcrypt
 
@@ -63,7 +64,10 @@ def search_users(keyword="", limit=50):
 
         if keyword:
             query = query.filter(
-                User.username.contains(keyword)
+                or_(
+                    User.username.contains(keyword),
+                    User.display_name.contains(keyword)
+                )
             )
 
         rows = (
@@ -80,6 +84,7 @@ def search_users(keyword="", limit=50):
                 "display_name": row.display_name,
                 "role": row.role,
                 "store_id": row.store_id,
+                "is_active": row.is_active,
                 "created_at": row.created_at,
             }
             for row in rows
@@ -100,14 +105,34 @@ def create_user(
     session = Session()
     
     try:
+
+        if not username:
+            raise ValueError("従業員番号を入力してください。")
+
+        if not username.isascii() or not username.isdigit():
+            raise ValueError(
+                "従業員番号は半角数字で入力してください。"
+            )
+
+        if not display_name.strip():
+            raise ValueError("氏名を入力してください。")
+
+        if not password:
+            raise ValueError("パスワードを入力してください。")
+
+        if any(char.isspace() for char in password):
+            raise ValueError("パスワードに空白は使用できません。")
+
         existing = (
             session.query(User)
             .filter(User.username == username)
             .first()
         )
+
         if existing:
-            session.close()
-            raise ValueError("このユーザー名は既に使用されています。")
+            raise ValueError(
+                "この従業員番号は既に使用されています。"
+            )
 
         hashed_password = bcrypt.hashpw(
             password.encode(),
@@ -128,7 +153,113 @@ def create_user(
     finally:
         session.close()
 
+def deactivate_user(user_id, current_user_id):
 
+    session = Session()
+
+    try:
+        if user_id == current_user_id:
+            return False, "自分自身は無効化できません。"
+
+        user = (
+            session.query(User)
+            .filter(User.id == user_id)
+            .first()
+        )
+
+        if user is None:
+            return False, "ユーザーが見つかりません。"
+
+        if not user.is_active:
+            return False, "このユーザーは既に無効です。"
+
+        if user.role == "admin":
+
+            admin_count = (
+                session.query(User)
+                .filter(
+                    User.role == "admin",
+                    User.is_active == True
+                )
+                .count()
+            )
+
+            if admin_count <= 1:
+                return False, "adminが1人しかいないため、無効化できません。"
+
+        user.is_active = False
+
+        session.commit()
+
+        return True, "ユーザーを無効化しました。"
+
+    finally:
+        session.close()
+
+def update_user_display_name(user_id, display_name):
+
+    session = Session()
+
+    try:
+        user = (
+            session.query(User)
+            .filter(User.id == user_id)
+            .first()
+        )
+
+        if user is None:
+            return False, "ユーザーが見つかりません。"
+
+        if not user.is_active:
+            return False, "無効なユーザーの氏名は変更できません。"
+
+        if not display_name.strip():
+            return False, "氏名を入力してください。"
+
+        user.display_name = display_name.strip()
+
+        session.commit()
+
+        return True, "氏名を変更しました。"
+
+    finally:
+        session.close()
+
+def reset_user_password(user_id, new_password):
+
+    session = Session()
+
+    try:
+        user = (
+            session.query(User)
+            .filter(User.id == user_id)
+            .first()
+        )
+
+        if user is None:
+            return False, "ユーザーが見つかりません。"
+
+        if not user.is_active:
+            return False, "無効なユーザーのパスワードは変更できません。"
+
+        if not new_password.strip():
+            return False, "新しいパスワードを入力してください。"
+
+        if any(char.isspace() for char in new_password):
+            return False, "パスワードに空白は使用できません。"
+        hashed_password = bcrypt.hashpw(
+            new_password.encode(),
+            bcrypt.gensalt()
+        ).decode()
+
+        user.hashed_password = hashed_password
+
+        session.commit()
+
+        return True, "パスワードをリセットしました。"
+
+    finally:
+        session.close()
 
 
 def save_visit_data(df, store_id):
@@ -264,6 +395,64 @@ def add_store(store_name):
         )
 
         session.commit()
+        return True
+
+    finally:
+        session.close()
+
+def delete_store(store_id):
+
+    session = Session()
+
+    try:
+        store = (
+            session.query(Store)
+            .filter(Store.id == store_id)
+            .first()
+        )
+
+        if store is None:
+            return False
+
+        has_users = (
+            session.query(User)
+            .filter(User.store_id == store_id)
+            .first()
+            is not None
+        )
+
+        has_visit_data = (
+            session.query(VisitData)
+            .filter(VisitData.store_id == store_id)
+            .first()
+            is not None
+        )
+
+        has_staffing = (
+            session.query(Staffing)
+            .filter(Staffing.store_id == store_id)
+            .first()
+            is not None
+        )
+
+        has_forecast = (
+            session.query(ForecastResult)
+            .filter(ForecastResult.store_id == store_id)
+            .first()
+            is not None
+        )
+
+        if (
+            has_users
+            or has_visit_data
+            or has_staffing
+            or has_forecast
+        ):
+            return False
+
+        session.delete(store)
+        session.commit()
+
         return True
 
     finally:
