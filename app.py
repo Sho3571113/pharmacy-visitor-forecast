@@ -24,7 +24,6 @@ from staffing_service import (
 # -----------------------
 st.set_page_config(
     page_title="来局者予測・人員配置システム",
-    page_icon="🏥",
     layout="wide"
 )
 
@@ -520,37 +519,31 @@ else:
     dashboard_page = st.Page(
         show_dashboard_page,
         title="ダッシュボード",
-        icon="🏠"
     )
 
     forecast_page = st.Page(
-        "pages/1_📊_来局者予測.py",
+        "pages/1_来局者予測.py",
         title="来局者予測",
-        icon="📊"
     )
 
     staffing_page = st.Page(
-        "pages/2_👥_人員配置.py",
+        "pages/2_人員配置.py",
         title="人員配置",
-        icon="👥"
     )
 
     store_page = st.Page(
-        "pages/3_🏪_店舗管理.py",
+        "pages/3_店舗管理.py",
         title="店舗管理",
-        icon="🏪"
     )
 
     user_page = st.Page(
-        "pages/4_👤_ユーザー管理.py",
+        "pages/4_ユーザー管理.py",
         title="ユーザー管理",
-        icon="👤"
     )
 
     model_page = st.Page(
-        "pages/5_⚙️_モデル管理.py",
+        "pages/5_モデル管理.py",
         title="モデル管理",
-        icon="⚙️"
     )
 
     # -----------------------
@@ -625,7 +618,7 @@ else:
     # -----------------------
 
     st.sidebar.title(
-        "🏥 来局者予測・人員配置システム"
+        "来局者予測・人員配置システム"
     )
 
     st.sidebar.divider()
@@ -633,19 +626,16 @@ else:
     st.sidebar.page_link(
         dashboard_page,
         label="ダッシュボード",
-        icon="🏠"
     )
 
     st.sidebar.page_link(
         forecast_page,
         label="来局者予測",
-        icon="📊"
     )
 
     st.sidebar.page_link(
         staffing_page,
         label="人員配置",
-        icon="👥"
     )
 
     if user.role == "admin":
@@ -653,13 +643,11 @@ else:
         st.sidebar.page_link(
             store_page,
             label="店舗管理",
-            icon="🏪"
         )
 
         st.sidebar.page_link(
             user_page,
             label="ユーザー管理",
-            icon="👤"
         )
 
     if user.role in ["hq_manager", "admin"]:
@@ -667,7 +655,6 @@ else:
         st.sidebar.page_link(
             model_page,
             label="モデル管理",
-            icon="⚙️"
         )
 
     st.sidebar.divider()
