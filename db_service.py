@@ -9,7 +9,11 @@ Session = sessionmaker(bind=engine)
 
 def get_stores():
     session = Session()
-    stores = session.query(Store).all()
+    stores = (
+        session.query(Store)
+        .filter(Store.is_active == True)
+        .all()
+    )
     session.close()
     return stores
 
@@ -150,6 +154,47 @@ def create_user(
         session.add(user)
         session.commit()
     
+    finally:
+        session.close()
+
+def update_user_store(user_id, store_id):
+
+    session = Session()
+
+    try:
+        user = (
+            session.query(User)
+            .filter(User.id == user_id)
+            .first()
+        )
+
+        if user is None:
+            return False, "ユーザーが見つかりません。"
+
+        if not user.is_active:
+            return False, "無効なユーザーの所属店舗は変更できません。"
+
+        if user.role not in ["general", "store_manager"]:
+            return False, "この権限のユーザーは所属店舗を変更できません。"
+
+        store = (
+            session.query(Store)
+            .filter(Store.id == store_id)
+            .first()
+        )
+
+        if store is None:
+            return False, "店舗が見つかりません。"
+
+        if not store.is_active:
+            return False, "無効な店舗には変更できません。"
+
+        user.store_id = store_id
+
+        session.commit()
+
+        return True, "所属店舗を変更しました。"
+
     finally:
         session.close()
 
@@ -400,7 +445,47 @@ def add_store(store_name):
     finally:
         session.close()
 
-def delete_store(store_id):
+def update_store_name(store_id, store_name):
+    session = Session()
+
+    try:
+        store = (
+            session.query(Store)
+            .filter(Store.id == store_id)
+            .first()
+        )
+
+        if store is None:
+            return False, "店舗が見つかりません。"
+
+        if not store.is_active:
+            return False, "無効な店舗の名称は変更できません。"
+
+        if not store_name.strip():
+            return False, "店舗名を入力してください。"
+
+        existing = (
+            session.query(Store)
+            .filter(
+                Store.store_name == store_name.strip(),
+                Store.id != store_id
+            )
+            .first()
+        )
+
+        if existing:
+            return False, "その店舗名は既に使用されています。"
+
+        store.store_name = store_name.strip()
+
+        session.commit()
+
+        return True, "店舗名を変更しました。"
+
+    finally:
+        session.close()
+
+def deactivate_store(store_id):
 
     session = Session()
 
@@ -412,51 +497,32 @@ def delete_store(store_id):
         )
 
         if store is None:
-            return False
+            return False, "店舗が見つかりません。"
 
-        has_users = (
+        if not store.is_active:
+            return False, "この店舗は既に無効です。"
+
+        has_active_users = (
             session.query(User)
-            .filter(User.store_id == store_id)
+            .filter(
+                User.store_id == store_id,
+                User.is_active == True
+            )
             .first()
             is not None
         )
 
-        has_visit_data = (
-            session.query(VisitData)
-            .filter(VisitData.store_id == store_id)
-            .first()
-            is not None
-        )
+        if has_active_users:
+            return False, "有効なユーザーが所属しているため、店舗を無効化できません。"
 
-        has_staffing = (
-            session.query(Staffing)
-            .filter(Staffing.store_id == store_id)
-            .first()
-            is not None
-        )
-
-        has_forecast = (
-            session.query(ForecastResult)
-            .filter(ForecastResult.store_id == store_id)
-            .first()
-            is not None
-        )
-
-        if (
-            has_users
-            or has_visit_data
-            or has_staffing
-            or has_forecast
-        ):
-            return False
-
-        session.delete(store)
+        store.is_active = False
         session.commit()
 
-        return True
+        return True, "店舗を無効化しました。"
 
     finally:
         session.close()
+
 
 def save_system_setting(setting_name, setting_value):
     with Session() as session:

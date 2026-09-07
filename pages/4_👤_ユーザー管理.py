@@ -1,11 +1,12 @@
 import streamlit as st
 from db_service import (
-     search_users,
-     get_stores,
-     create_user,
-     deactivate_user,
-     update_user_display_name,
-     reset_user_password
+    search_users,
+    get_stores,
+    create_user,
+    deactivate_user,
+    update_user_display_name,
+    reset_user_password,
+    update_user_store
 )
 
 
@@ -165,8 +166,8 @@ if keyword:
 
     for _, row in df_users.iterrows():
 
-        col1, col2, col3, col4, col5, col6, col7, col8 = st.columns(
-            [1, 2, 2, 2, 2, 1.5, 1.5, 4]
+        col1, col2, col3, col4, col5, col6, col7, col8, col9 = st.columns(
+            [1, 2, 2, 2, 2, 1.2, 1.2, 1.5, 2]
         )
 
         with col1:
@@ -198,6 +199,17 @@ if keyword:
                         row["氏名"]
                     )
         with col7:
+            if (
+                row["状態"] == "有効"
+                and row["権限"] in ["一般ユーザー", "店舗責任者"]
+            ):
+                if st.button(
+                    "店舗変更",
+                    key=f"change_store_{row['内部ID']}"
+                ):
+                    st.session_state["change_store_user_id"] = row["内部ID"]
+                    st.session_state["change_store_current"] = row["店舗名"]
+        with col8:
             if row["状態"] == "有効":
                 if st.button(
                     "氏名変更",
@@ -205,7 +217,7 @@ if keyword:
                 ):
                     st.session_state["change_name_user_id"] = row["内部ID"]
                     st.session_state["change_name_current"] = row["氏名"]
-        with col8:
+        with col9:
             if row["状態"] == "有効":
                 if st.button(
                     "パスワードリセット",
@@ -215,7 +227,44 @@ if keyword:
                         row["内部ID"],
                         row["氏名"]
                     )
-        
+
+    if "change_store_user_id" in st.session_state:
+
+        change_store_user_id = st.session_state["change_store_user_id"]
+        current_store_name = st.session_state["change_store_current"]
+
+        st.subheader("所属店舗変更")
+
+        stores = get_stores()
+
+        selected_store = st.selectbox(
+            "新しい所属店舗",
+            stores,
+            format_func=lambda x: x.store_name
+        )
+
+        if st.button("所属店舗を変更する"):
+
+            if selected_store.store_name == current_store_name:
+                st.error("現在と同じ店舗です。")
+
+            else:
+                success, message = update_user_store(
+                    change_store_user_id,
+                    selected_store.id
+                )
+
+                if success:
+                    st.success(message)
+
+                    del st.session_state["change_store_user_id"]
+                    del st.session_state["change_store_current"]
+
+                    st.rerun()
+
+                else:
+                    st.error(message)
+     
     if "change_name_user_id" in st.session_state:
 
         change_user_id = st.session_state["change_name_user_id"]

@@ -11,6 +11,7 @@ class Store(Base):
 
     id = Column(Integer, primary_key=True)
     store_name = Column(String, nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
 
 
 class User(Base):

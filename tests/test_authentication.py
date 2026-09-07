@@ -8,7 +8,7 @@ import pytest
 def test_authenticate_user_returns_user_when_password_is_correct():
     # Arrange（準備）
     session = MagicMock()
-    user = SimpleNamespace(username="test_user", hashed_password="hashed_password")
+    user = SimpleNamespace(username="test_user", hashed_password="hashed_password", is_active=True)
     session.query.return_value.filter_by.return_value.first.return_value = user
     session_factory = MagicMock(return_value=session)
 
@@ -50,7 +50,7 @@ def test_authenticate_user_returns_none_when_user_does_not_exist():
 def test_authenticate_user_returns_none_when_password_is_incorrect():
     # Arrange（準備）
     session = MagicMock()
-    user = SimpleNamespace(username="test_user", hashed_password="hashed_password")
+    user = SimpleNamespace(username="test_user", hashed_password="hashed_password", is_active=True)
     session.query.return_value.filter_by.return_value.first.return_value = user
     session_factory = MagicMock(return_value=session)
 

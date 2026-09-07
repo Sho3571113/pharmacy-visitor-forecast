@@ -9,10 +9,16 @@ import db_service
 
 
 def test_get_stores_returns_all_stores():
-    # Arrange（準備）
     session = MagicMock()
-    stores = [SimpleNamespace(id=1, store_name="渋谷店")]
-    session.query.return_value.all.return_value = stores
+    stores = [
+        SimpleNamespace(
+            id=1,
+            store_name="渋谷店",
+            is_active=True
+        )
+    ]
+
+    session.query.return_value.filter.return_value.all.return_value = stores
 
     # Act（実行）
     with patch.object(db_service, "Session", return_value=session):
@@ -21,6 +27,7 @@ def test_get_stores_returns_all_stores():
     # Assert（確認）
     assert result == stores
     session.query.assert_called_once_with(db_service.Store)
+    session.query.return_value.filter.assert_called_once()
     session.close.assert_called_once()
 
 
