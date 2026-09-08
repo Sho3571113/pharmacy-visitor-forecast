@@ -1,6 +1,6 @@
 from sqlalchemy.orm import sessionmaker
 from db_config import engine
-from models import Base, User
+from models import Base, User, Store
 import bcrypt
 
 
@@ -41,6 +41,26 @@ try:
 
     else:
         print("adminユーザーは既に存在します。")
+
+    # 初期店舗が存在するか確認
+    store = (
+        session.query(Store)
+        .filter(Store.store_name == "サンプル店舗")
+        .first()
+    )
+
+    if store is None:
+        store = Store(
+            store_name="サンプル店舗",
+            is_active=True
+        )
+
+        session.add(store)
+        session.commit()
+
+        print("サンプル店舗を作成しました。")
+    else:
+        print("サンプル店舗は既に存在します。")   
 
 finally:
     session.close()
