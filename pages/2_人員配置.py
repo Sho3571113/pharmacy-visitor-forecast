@@ -2,7 +2,8 @@ import streamlit as st
 import pandas as pd
 
 from db_service import (
-    get_system_setting
+    get_system_setting,
+    get_forecast_result
 )
 
 from staffing_service import(
@@ -25,9 +26,11 @@ selected_store = st.session_state["selected_store"]
 
 st.subheader("推奨薬剤師人数")
 
-df_forecast = st.session_state.get("df_forecast")
+df_forecast = get_forecast_result(
+    selected_store.id
+)
 
-if df_forecast is None:
+if df_forecast.empty:
 
     st.info(
         "先に「来局者予測」画面で予測を実行してください。"

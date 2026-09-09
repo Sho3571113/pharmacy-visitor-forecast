@@ -11,12 +11,15 @@ from authentication import authenticate_user
 from db_service import (
     get_stores,
     get_forecast_result,
-    get_system_setting
+    get_system_setting,
+    has_visit_data,
+    save_visit_data
 )
 from staffing_service import (
     get_staffing,
     get_staff_suggestion
 )
+from forecast_service import forecast_from_db
 
 
 # -----------------------
@@ -78,12 +81,12 @@ def show_login():
     )
 
     st.markdown(
-        '<div class="login-label">ユーザー名</div>',
+        '<div class="login-label">従業員番号</div>',
         unsafe_allow_html=True
     )
 
     username = st.text_input(
-        "ユーザー名",
+        "従業員番号",
         label_visibility="collapsed"
     )
 
@@ -114,6 +117,67 @@ def show_login():
             st.error(
                 "ユーザー名またはパスワードが違います"
             )
+
+def show_initial_setup(selected_store):
+    """初回セットアップ画面を表示する"""
+
+    st.title("初回セットアップ")
+
+    st.write(
+        "初回利用のため、来局データを登録してください。"
+    )
+
+    uploaded_file = st.file_uploader(
+        "CSVファイルを選択",
+        type="csv"
+    )
+
+    if uploaded_file is not None:
+
+        df = pd.read_csv(uploaded_file)
+
+        st.dataframe(
+            df.head(10),
+            use_container_width=True,
+            hide_index=True
+        )
+
+        if st.button("DBへ登録"):
+
+            try:
+
+                saved_count = save_visit_data(
+                    df,
+                    selected_store.id
+                )
+
+                st.success(
+                    f"{saved_count}件の来局データを登録しました。"
+                )
+
+                df_forecast, model = forecast_from_db(
+                    selected_store.id,
+                    30
+                )
+
+                if df_forecast is None:
+
+                    st.error(
+                        "来局データの登録は完了しましたが、"
+                        "予測を実行できませんでした。"
+                    )
+
+                else:
+
+                    st.success(
+                        "初回予測が完了しました。"
+                    )
+
+                    st.rerun()
+
+            except ValueError as e:
+
+                st.error(str(e))
 
 # -----------------------
 # 共通ヘッダー
@@ -598,17 +662,8 @@ else:
     # 共通ヘッダー
     # -----------------------
 
-    page_numbers = {
-    "ダッシュボード": "①",
-    "来局者予測": "②",
-    "人員配置": "③",
-    "店舗管理": "④",
-    "ユーザー管理": "⑤",
-    "モデル管理": "⑥"
-    }
-
     selected_store = show_header(
-        f'{page_numbers.get(pg.title, "")} {pg.title}',
+        f'{pg.title}',
         stores,
         user
     )
@@ -676,7 +731,10 @@ else:
         )
 
         st.rerun()
+    if not has_visit_data():
 
+       show_initial_setup(selected_store)
+       st.stop()
     # -----------------------
     # ページ表示
     # -----------------------

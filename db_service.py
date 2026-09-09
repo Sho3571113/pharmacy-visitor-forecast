@@ -113,9 +113,9 @@ def create_user(
         if not username:
             raise ValueError("従業員番号を入力してください。")
 
-        if not username.isascii() or not username.isdigit():
+        if not username.isascii() or not username.isalnum():
             raise ValueError(
-                "従業員番号は半角数字で入力してください。"
+                "従業員番号は半角英数字で入力してください。"
             )
 
         if not display_name.strip():
@@ -306,6 +306,14 @@ def reset_user_password(user_id, new_password):
     finally:
         session.close()
 
+def has_visit_data():
+    session = Session()
+
+    try:
+        return session.query(VisitData).first() is not None
+
+    finally:
+        session.close()
 
 def save_visit_data(df, store_id):
         

@@ -42,7 +42,7 @@ selected_store = st.session_state["selected_store"]
 with st.container(key="forecast-control"):
 
 
-    col1, col2, col3 = st.columns([2, 2, 1])
+    col1, col2 = st.columns([2, 2], vertical_alignment="bottom")
 
     with col1:
         forecast_days = st.selectbox(
@@ -53,8 +53,6 @@ with st.container(key="forecast-control"):
         )
 
     with col2:
-        st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
-
         predict_button = st.button(
             "予測を実行",
             use_container_width=True

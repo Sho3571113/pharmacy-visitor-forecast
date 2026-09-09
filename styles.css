@@ -111,6 +111,7 @@
     margin-bottom: 6px;
 }
 
+
 /* 現在選択しているページ */
 [data-testid="stSidebarNav"] li[aria-current="page"] {
     background-color: #2563a8;

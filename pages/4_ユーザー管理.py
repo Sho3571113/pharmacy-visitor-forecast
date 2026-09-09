@@ -125,108 +125,111 @@ if keyword:
         for store in stores
     }
 
-    df_users["store_name"] = df_users["store_id"].map(
+    if df_users.empty:
+        st.info("ユーザーが登録されていません。")
+    else:
+        df_users["store_name"] = df_users["store_id"].map(
         store_names
-    )
-
-    df_users = df_users[
-        [   "id",
-            "username",
-            "display_name",
-            "role",
-            "store_name",
-            "is_active"
-        ]
-    ].rename(
-        columns={
-            "id": "内部ID",
-            "username": "従業員番号",
-            "display_name": "氏名",
-            "role": "権限",
-            "store_name": "店舗名",
-            "is_active": "状態"
-        }
-    )
-
-    df_users["権限"] = df_users["権限"].replace(
-        {
-            "general": "一般ユーザー",
-            "store_manager": "店舗責任者",
-            "hq_manager": "本部責任者",
-            "admin": "システム管理者"
-        }
-    )
-
-    df_users["状態"] = df_users["状態"].replace(
-    {
-        True: "有効",
-        False: "無効"
-    }
-    )
-
-    for _, row in df_users.iterrows():
-
-        col1, col2, col3, col4, col5, col6, col7, col8, col9 = st.columns(
-            [1, 2, 2, 2, 2, 1.2, 1.2, 1.5, 2]
         )
 
-        with col1:
-            st.write(row["従業員番号"])
+        df_users = df_users[
+            [   "id",
+                "username",
+                "display_name",
+                "role",
+                "store_name",
+                "is_active"
+            ]
+        ].rename(
+            columns={
+                "id": "内部ID",
+                "username": "従業員番号",
+                "display_name": "氏名",
+                "role": "権限",
+                "store_name": "店舗名",
+                "is_active": "状態"
+            }
+        )
 
-        with col2:
-            st.write(row["氏名"])
+        df_users["権限"] = df_users["権限"].replace(
+            {
+                "general": "一般ユーザー",
+                "store_manager": "店舗責任者",
+                "hq_manager": "本部責任者",
+                "admin": "システム管理者"
+            }
+        )
 
-        with col3:
-            st.write(row["権限"])
+        df_users["状態"] = df_users["状態"].replace(
+            {
+                True: "有効",
+                False: "無効"
+            }
+        )
 
-        with col4:
-            st.write(row["店舗名"])
+        for _, row in df_users.iterrows():
 
-        with col5:
-            st.write(row["状態"])
+            col1, col2, col3, col4, col5, col6, col7, col8, col9 = st.columns(
+                [1, 2, 2, 2, 2, 1.2, 1.2, 1.5, 2]
+            )
 
-        with col6:
-            if (
-                row["状態"] == "有効"
-                and row["内部ID"] != user.id
-            ):
-                if st.button(
-                    "無効化",
-                    key=f"deactivate_user_{row['内部ID']}"
+            with col1:
+                st.write(row["従業員番号"])
+
+            with col2:
+                st.write(row["氏名"])
+
+            with col3:
+                st.write(row["権限"])
+
+            with col4:
+                st.write(row["店舗名"])
+
+            with col5:
+                st.write(row["状態"])
+
+            with col6:
+                if (
+                    row["状態"] == "有効"
+                    and row["内部ID"] != user.id
                 ):
-                    confirm_deactivate_user(
-                        row["内部ID"],
-                        row["氏名"]
-                    )
-        with col7:
-            if (
-                row["状態"] == "有効"
-                and row["権限"] in ["一般ユーザー", "店舗責任者"]
-            ):
-                if st.button(
-                    "店舗変更",
-                    key=f"change_store_{row['内部ID']}"
+                    if st.button(
+                        "無効化",
+                        key=f"deactivate_user_{row['内部ID']}"
+                    ):
+                        confirm_deactivate_user(
+                            row["内部ID"],
+                            row["氏名"]
+                        )
+            with col7:
+                if (
+                    row["状態"] == "有効"
+                    and row["権限"] in ["一般ユーザー", "店舗責任者"]
                 ):
-                    st.session_state["change_store_user_id"] = row["内部ID"]
-                    st.session_state["change_store_current"] = row["店舗名"]
-        with col8:
-            if row["状態"] == "有効":
-                if st.button(
-                    "氏名変更",
-                    key=f"change_name_{row['内部ID']}"
-                ):
-                    st.session_state["change_name_user_id"] = row["内部ID"]
-                    st.session_state["change_name_current"] = row["氏名"]
-        with col9:
-            if row["状態"] == "有効":
-                if st.button(
-                    "パスワードリセット",
-                    key=f"reset_password_{row['内部ID']}"
-                ):
-                    reset_password_dialog(
-                        row["内部ID"],
-                        row["氏名"]
-                    )
+                    if st.button(
+                        "店舗変更",
+                        key=f"change_store_{row['内部ID']}"
+                    ):
+                        st.session_state["change_store_user_id"] = row["内部ID"]
+                        st.session_state["change_store_current"] = row["店舗名"]
+            with col8:
+                if row["状態"] == "有効":
+                    if st.button(
+                        "氏名変更",
+                        key=f"change_name_{row['内部ID']}"
+                    ):
+                        st.session_state["change_name_user_id"] = row["内部ID"]
+                        st.session_state["change_name_current"] = row["氏名"]
+            with col9:
+                if row["状態"] == "有効":
+                    if st.button(
+                        "パスワードリセット",
+                        key=f"reset_password_{row['内部ID']}"
+                    ):
+                        reset_password_dialog(
+                            row["内部ID"],
+                            row["氏名"]
+                        )
 
     if "change_store_user_id" in st.session_state:
 
@@ -299,8 +302,6 @@ if keyword:
                 else:
                     st.error(message)
 
-else:
-    st.info("従業員番号または氏名を入力して検索してください。")
 
 # -----------------------
 # ユーザー追加
@@ -309,7 +310,7 @@ else:
 st.subheader("ユーザー追加")
 
 user_id = st.text_input(
-    "ユーザーID（従業員番号）",
+    "従業員番号",
     placeholder="半角数字で入力"
 )
 
@@ -358,8 +359,8 @@ if st.button("ユーザー登録"):
     if not user_id:
         st.error("従業員番号を入力してください。")
 
-    elif not user_id.isascii() or not user_id.isdigit():
-        st.error("従業員番号は半角数字で入力してください。")
+    elif not user_id.isascii() or not user_id.isalnum():
+        st.error("従業員番号は半角英数字で入力してください。")
 
     elif not display_name:
         st.error("氏名を入力してください。")
