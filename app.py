@@ -142,7 +142,7 @@ def show_initial_setup(selected_store):
             hide_index=True
         )
 
-        if st.button("DBへ登録"):
+        if st.button("予測を実行"):
 
             try:
 
