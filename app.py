@@ -19,7 +19,7 @@ from staffing_service import (
     get_staffing,
     get_staff_suggestion
 )
-from forecast_service import forecast_from_db
+from forecast_service import forecast_from_db, train_model_from_db
 
 
 # -----------------------
@@ -153,7 +153,9 @@ def show_initial_setup(selected_store):
 
                 st.success(
                     f"{saved_count}件の来局データを登録しました。"
-                )
+)
+
+                train_model_from_db(selected_store.id)
 
                 df_forecast, model = forecast_from_db(
                     selected_store.id,

@@ -1,6 +1,7 @@
 import pandas as pd
 import joblib
 
+from pathlib import Path
 from db_service import get_visit_data,   save_forecast_result
 from lgbforecast import (
     train_lightgbm_model,
@@ -9,6 +10,8 @@ from lgbforecast import (
 
 MODEL_PATH = "saved_models/model.pkl"
 LABEL_ENCODER_PATH = "saved_models/label_encoder.pkl"
+
+Path("saved_models").mkdir(exist_ok=True)
 
 
 def forecast_from_db(store_id, forecast_days):
