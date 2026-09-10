@@ -58,7 +58,11 @@ if st.button("設定を保存"):
 st.subheader("モデル学習")
 
 st.write(
-    "選択した店舗の来局データを使用して予測モデルを学習します。"
+    f"学習対象店舗：{selected_store.store_name}"
+)
+
+st.write(
+    "この店舗の来局データを使用して予測モデルを学習します。"
 )
 
 

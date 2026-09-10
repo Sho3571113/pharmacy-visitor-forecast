@@ -618,7 +618,6 @@ else:
 
         pages = [
             dashboard_page,
-            forecast_page,
             staffing_page
         ]
 
@@ -678,20 +677,12 @@ else:
 
     st.sidebar.divider()
 
-    st.sidebar.page_link(
-        dashboard_page,
-        label="ダッシュボード",
-    )
+    st.sidebar.page_link(dashboard_page, label="ダッシュボード")
 
-    st.sidebar.page_link(
-        forecast_page,
-        label="来局者予測",
-    )
+    if user.role != "general":
+        st.sidebar.page_link(forecast_page, label="来局者予測")
 
-    st.sidebar.page_link(
-        staffing_page,
-        label="人員配置",
-    )
+    st.sidebar.page_link(staffing_page, label="人員配置")
 
     if user.role == "admin":
 

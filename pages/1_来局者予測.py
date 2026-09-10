@@ -33,11 +33,16 @@ if "df_forecast" not in st.session_state:
 if "model" not in st.session_state:
     st.session_state["model"] = None
 
+selected_store = st.session_state["selected_store"]
+
+if st.session_state.get("forecast_store_id") != selected_store.id:
+    st.session_state["df_forecast"] = None
+    st.session_state["model"] = None
+    st.session_state["forecast_store_id"] = selected_store.id
+
 if user is None:
     st.warning("ログインしてください。")
     st.stop()
-
-selected_store = st.session_state["selected_store"]
 
 with st.container(key="forecast-control"):
 
@@ -84,12 +89,21 @@ if uploaded_file:
 
     with st.container(key="csv-preview-card"):
 
-        st.markdown(
-            '<div class="forecast-section-title">'
-            'CSVデータ確認'
-            '</div>',
-            unsafe_allow_html=True
-        )
+        col1, col2 = st.columns([4, 1], vertical_alignment="center")
+
+        with col1:
+            st.markdown(
+                '<div class="forecast-section-title">'
+                'CSVデータ確認'
+                '</div>',
+                unsafe_allow_html=True
+            )
+
+        with col2:
+            save_button = st.button(
+                "DBへ保存",
+                use_container_width=True
+            )
 
         st.dataframe(
             df.head(10),
@@ -97,7 +111,7 @@ if uploaded_file:
             hide_index=True
         )
 
-        if st.button("DBへ保存"):
+        if save_button:
 
             try:
                 saved_count = save_visit_data(
@@ -128,7 +142,7 @@ if uploaded_file:
 #       )
 
 
-if user.role in ["hq_manager", "admin"]:
+if user.role in ["store_manager", "hq_manager", "admin"]:
 
     if predict_button:
 
