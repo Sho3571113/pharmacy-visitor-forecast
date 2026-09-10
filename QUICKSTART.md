@@ -19,13 +19,15 @@ env\Scripts\activate
 pip install -r requirements.txt
 
 ## 4. アカウントの初期設定
-プロジェクト直下に .env ファイルを作成し、初期管理者の情報を設定します。
+プロジェクト直下で `.env.example` をコピーして `.env` を作成し、
+初期管理者の情報を設定します。
+
 ```bash
-touch .env
+cp .env.example .env
 ```
 .envの中身
 
-INITIAL_ADMIN_USERNAME=admin
+INITIAL_ADMIN_USERNAME=123admin
 INITIAL_ADMIN_PASSWORD=admin123
 
 ※ 上記はポートフォリオ用の初期値です。
@@ -44,6 +46,12 @@ streamlit経由で起動します。
 ## ７. 予測機能の動作確認
 
 初期管理者でログインすると、初回セットアップ画面へ進みます。
+
+従業員番号　123admin
+パスワード　admin123
+
+※ 上記はポートフォリオ用の初期値です。
+実運用では変更してください
 
 ### 初回セットアップ手順
 
