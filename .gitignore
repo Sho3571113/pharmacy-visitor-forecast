@@ -1,6 +1,7 @@
 # Python
 __pycache__/
 *.py[cod]
+saved_models/
 
 # 仮想環境
 env/
