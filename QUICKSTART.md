@@ -27,9 +27,10 @@ cp .env.example .env
 ```
 .envの中身
 
+```
 INITIAL_ADMIN_USERNAME=123admin
 INITIAL_ADMIN_PASSWORD=admin123
-
+```
 ※ 上記はポートフォリオ用の初期値です。
 実運用では変更してください。
 
