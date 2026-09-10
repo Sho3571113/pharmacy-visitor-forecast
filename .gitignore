@@ -7,6 +7,9 @@ saved_models/
 env/
 venv/
 
+#環境変数
+.env
+
 # VS Code
 .vscode/
 
