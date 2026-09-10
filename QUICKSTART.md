@@ -7,22 +7,26 @@
 ## 2. 仮想環境の作成
 
 ### macOS / Linux
-```bash
+```
 python3 -m venv env
 source env/bin/activate
 ```
 ### Windows
+```
 python -m venv env
 env\Scripts\activate
+```
 
 ## 3. ライブラリのインストール
+```
 pip install -r requirements.txt
+```
 
 ## 4. アカウントの初期設定
 プロジェクト直下で `.env.example` をコピーして `.env` を作成し、
 初期管理者の情報を設定します。
 
-```bash
+```
 cp .env.example .env
 ```
 .envの中身
@@ -35,12 +39,16 @@ INITIAL_ADMIN_PASSWORD=admin123
 実運用では変更してください。
 
 ## ５. データベースの初期設定
+```
 python init_db.py
+```
 
 初回実行時に必要なテーブル、管理者用アカウントとサンプル店舗が作成されます。
 
 ## ６.　起動方法
+```
 streamlit run app.py
+```
 
 streamlit経由で起動します。
 
