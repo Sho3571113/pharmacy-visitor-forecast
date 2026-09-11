@@ -142,7 +142,11 @@ else:
             "predicted_visits": "予測来局者数"
         }
     )
-
+    st.write(
+        "実配置人数を表に直接入力してください。"
+        "入力後、「実配置人数を保存」ボタンを押すと登録されます。"
+    )
+    
     edited_df = st.data_editor(
         df_display,
         use_container_width=True,
