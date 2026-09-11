@@ -26,8 +26,14 @@ pip install -r requirements.txt
 プロジェクト直下で `.env.example` をコピーして `.env` を作成し、
 初期管理者の情報を設定します。
 
+### macOS / Linux
 ```
 cp .env.example .env
+```
+
+### Windows
+```
+copy .env.example .env
 ```
 .envの中身
 
